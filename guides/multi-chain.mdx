@@ -1,0 +1,615 @@
+---
+title: "Multi-Chain Operations"
+description: "Guide for using DSA Connect across different EVM-compatible chains"
+---
+
+DSA Connect supports multiple EVM-compatible chains, allowing you to deploy and interact with DeFi protocols across different networks.
+
+## Supported Chains
+
+DSA Connect currently supports the following chains:
+
+<CardGroup cols={3}>
+  <Card title="Ethereum" icon="ethereum">
+    **Chain ID:** 1
+
+    Mainnet with full protocol support
+  </Card>
+  <Card title="Polygon" icon="polygon">
+    **Chain ID:** 137
+
+    Low-cost alternative to Ethereum
+  </Card>
+  <Card title="Arbitrum" icon="arbitrum">
+    **Chain ID:** 42161
+
+    Layer 2 scaling solution
+  </Card>
+  <Card title="Optimism" icon="optimism">
+    **Chain ID:** 10
+
+    Optimistic rollup L2
+  </Card>
+  <Card title="Avalanche" icon="avalanche">
+    **Chain ID:** 43114
+
+    High-performance blockchain
+  </Card>
+  <Card title="Fantom" icon="fantom">
+    **Chain ID:** 250
+
+    Fast and low-cost network
+  </Card>
+  <Card title="Base" icon="base">
+    **Chain ID:** 8453
+
+    Coinbase's L2 network
+  </Card>
+  <Card title="BSC" icon="binance">
+    **Chain ID:** 56
+
+    Binance Smart Chain
+  </Card>
+  <Card title="Plasma" icon="link">
+    **Chain ID:** 9745
+
+    Plasma network
+  </Card>
+</CardGroup>
+
+## Initializing on Different Chains
+
+### Browser Setup
+
+<Tabs>
+  <Tab title="Ethereum Mainnet">
+    ```javascript
+    import { DSA } from 'dsa-connect'
+    import Web3 from 'web3'
+
+    const web3 = new Web3(window.ethereum)
+    const dsa = new DSA(web3, 1) // Chain ID 1
+    ```
+  </Tab>
+
+  <Tab title="Polygon">
+    ```javascript
+    import { DSA } from 'dsa-connect'
+    import Web3 from 'web3'
+
+    const web3 = new Web3(window.ethereum)
+    const dsa = new DSA(web3, 137) // Chain ID 137
+    ```
+  </Tab>
+
+  <Tab title="Arbitrum">
+    ```javascript
+    import { DSA } from 'dsa-connect'
+    import Web3 from 'web3'
+
+    const web3 = new Web3(window.ethereum)
+    const dsa = new DSA(web3, 42161) // Chain ID 42161
+    ```
+  </Tab>
+
+  <Tab title="Optimism">
+    ```javascript
+    import { DSA } from 'dsa-connect'
+    import Web3 from 'web3'
+
+    const web3 = new Web3(window.ethereum)
+    const dsa = new DSA(web3, 10) // Chain ID 10
+    ```
+  </Tab>
+</Tabs>
+
+### Node.js Setup
+
+<CodeGroup>
+```javascript Ethereum
+const Web3 = require('web3')
+const DSA = require('dsa-connect')
+
+const web3 = new Web3(
+  new Web3.providers.HttpProvider('https://eth-mainnet.alchemyapi.io/v2/YOUR-KEY')
+)
+
+const dsa = new DSA({
+  web3: web3,
+  mode: 'node',
+  privateKey: process.env.PRIVATE_KEY
+}, 1)
+```
+
+```javascript Polygon
+const Web3 = require('web3')
+const DSA = require('dsa-connect')
+
+const web3 = new Web3(
+  new Web3.providers.HttpProvider('https://polygon-rpc.com')
+)
+
+const dsa = new DSA({
+  web3: web3,
+  mode: 'node',
+  privateKey: process.env.PRIVATE_KEY
+}, 137)
+```
+
+```javascript Arbitrum
+const Web3 = require('web3')
+const DSA = require('dsa-connect')
+
+const web3 = new Web3(
+  new Web3.providers.HttpProvider('https://arb1.arbitrum.io/rpc')
+)
+
+const dsa = new DSA({
+  web3: web3,
+  mode: 'node',
+  privateKey: process.env.PRIVATE_KEY
+}, 42161)
+```
+
+```javascript Avalanche
+const Web3 = require('web3')
+const DSA = require('dsa-connect')
+
+const web3 = new Web3(
+  new Web3.providers.HttpProvider('https://api.avax.network/ext/bc/C/rpc')
+)
+
+const dsa = new DSA({
+  web3: web3,
+  mode: 'node',
+  privateKey: process.env.PRIVATE_KEY
+}, 43114)
+```
+</CodeGroup>
+
+## Chain Validation
+
+By default, DSA Connect validates that the Web3 provider's chain ID matches the specified chain:
+
+```javascript
+const dsa = new DSA(web3, 137) // Will throw error if Web3 is not on Polygon
+```
+
+To skip validation (use with caution):
+
+```javascript
+const dsa = new DSA(
+  web3,
+  137,
+  { skipChainIdValidation: true }
+)
+```
+
+<Warning>
+  Skipping chain ID validation can lead to transactions being sent to the wrong network. Only use this option if you're certain about the network configuration.
+</Warning>
+
+## Checking Current Chain
+
+Get the current chain ID from your DSA instance:
+
+```javascript
+console.log('Current Chain ID:', dsa.instance.chainId)
+```
+
+## Switching Networks
+
+When users switch networks in their wallet:
+
+<Steps>
+  <Step title="Detect Network Change">
+    ```javascript
+    // Listen for network changes
+    if (window.ethereum) {
+      window.ethereum.on('chainChanged', async (chainId) => {
+        console.log('Network changed to:', chainId)
+        // Reload the page or reinitialize
+      })
+    }
+    ```
+  </Step>
+
+  <Step title="Refresh Chain ID">
+    ```javascript
+    // Refresh the chain ID in DSA
+    await dsa.refreshChainId()
+    console.log('Updated to chain:', dsa.instance.chainId)
+    ```
+  </Step>
+
+  <Step title="Reinitialize if Needed">
+    ```javascript
+    // If chain is not supported, reinitialize
+    const supportedChains = [1, 137, 42161, 43114, 10, 250, 8453, 9745, 56]
+    const currentChainId = await web3.eth.getChainId()
+
+    if (!supportedChains.includes(currentChainId)) {
+      console.error('Unsupported chain')
+      // Prompt user to switch network
+    } else {
+      // Reinitialize DSA with new chain
+      dsa = new DSA(web3, currentChainId)
+    }
+    ```
+  </Step>
+</Steps>
+
+## Multi-Chain Account Management
+
+### Separate Accounts per Chain
+
+DSA accounts are chain-specific. The same Ethereum address can have different DSA accounts on each chain:
+
+```javascript
+// Get accounts on Ethereum
+const ethDsa = new DSA(web3Eth, 1)
+const ethAccounts = await ethDsa.getAccounts(userAddress)
+
+// Get accounts on Polygon
+const polygonDsa = new DSA(web3Polygon, 137)
+const polygonAccounts = await polygonDsa.getAccounts(userAddress)
+
+console.log('Ethereum DSAs:', ethAccounts.length)
+console.log('Polygon DSAs:', polygonAccounts.length)
+```
+
+### Create Account on Multiple Chains
+
+```javascript
+async function createAccountOnAllChains(userAddress) {
+  const chains = [
+    { id: 1, name: 'Ethereum', rpc: 'https://eth-mainnet...' },
+    { id: 137, name: 'Polygon', rpc: 'https://polygon-rpc.com' },
+    { id: 42161, name: 'Arbitrum', rpc: 'https://arb1.arbitrum.io/rpc' },
+  ]
+
+  for (const chain of chains) {
+    const web3 = new Web3(new Web3.providers.HttpProvider(chain.rpc))
+    const dsa = new DSA({ web3, mode: 'node', privateKey: PRIVATE_KEY }, chain.id)
+
+    const accounts = await dsa.getAccounts(userAddress)
+
+    if (accounts.length === 0) {
+      console.log(`Creating DSA on ${chain.name}...`)
+      await dsa.build()
+      console.log(`✓ Created DSA on ${chain.name}`)
+    } else {
+      console.log(`✓ DSA already exists on ${chain.name}`)
+    }
+  }
+}
+```
+
+## Chain-Specific Considerations
+
+### Gas Prices
+
+Different chains have different gas price dynamics:
+
+<Tabs>
+  <Tab title="Ethereum">
+    ```javascript
+    // Ethereum: High gas, use EIP-1559
+    const spell = dsa.Spell()
+    spell.add({ /* ... */ })
+
+    await spell.cast({
+      maxFeePerGas: '50000000000', // 50 gwei
+      maxPriorityFeePerGas: '2000000000' // 2 gwei tip
+    })
+    ```
+  </Tab>
+
+  <Tab title="Polygon">
+    ```javascript
+    // Polygon: Low gas, still use EIP-1559
+    const spell = dsa.Spell()
+    spell.add({ /* ... */ })
+
+    await spell.cast({
+      maxFeePerGas: '100000000000', // 100 gwei (higher in MATIC terms)
+      maxPriorityFeePerGas: '30000000000' // 30 gwei tip
+    })
+    ```
+  </Tab>
+
+  <Tab title="Arbitrum">
+    ```javascript
+    // Arbitrum: Very low gas
+    const spell = dsa.Spell()
+    spell.add({ /* ... */ })
+
+    await spell.cast({
+      gasPrice: '100000000' // 0.1 gwei is often enough
+    })
+    ```
+  </Tab>
+
+  <Tab title="Optimism">
+    ```javascript
+    // Optimism: Low gas, but includes L1 data fee
+    const spell = dsa.Spell()
+    spell.add({ /* ... */ })
+
+    // Let the provider set gas price
+    await spell.cast()
+    ```
+  </Tab>
+</Tabs>
+
+### Protocol Availability
+
+Not all protocols are available on all chains. Check connector availability:
+
+```javascript
+// Ethereum has the most protocols
+const ethDsa = new DSA(web3, 1)
+const ethSpell = ethDsa.Spell()
+ethSpell.add({
+  connector: 'aave',
+  method: 'deposit',
+  args: [/* ... */]
+})
+
+// Some protocols might not be on other chains
+const polygonDsa = new DSA(web3, 137)
+const polygonSpell = polygonDsa.Spell()
+// Always verify protocol exists on target chain
+polygonSpell.add({
+  connector: 'aave', // Available on Polygon
+  method: 'deposit',
+  args: [/* ... */]
+})
+```
+
+<Note>
+  See the [Connectors Reference](/concepts/connectors) for chain-specific protocol availability.
+</Note>
+
+## Cross-Chain Example Application
+
+### Multi-Chain Portfolio Manager
+
+```javascript
+class MultiChainDSA {
+  constructor() {
+    this.chains = {
+      ethereum: { id: 1, dsa: null },
+      polygon: { id: 137, dsa: null },
+      arbitrum: { id: 42161, dsa: null }
+    }
+  }
+
+  async initialize(web3Providers, privateKey) {
+    for (const [name, config] of Object.entries(this.chains)) {
+      const web3 = new Web3(web3Providers[name])
+      config.dsa = new DSA(
+        { web3, mode: 'node', privateKey },
+        config.id
+      )
+    }
+  }
+
+  async getAccountsAllChains(userAddress) {
+    const results = {}
+
+    for (const [name, config] of Object.entries(this.chains)) {
+      results[name] = await config.dsa.getAccounts(userAddress)
+    }
+
+    return results
+  }
+
+  async depositOnChain(chainName, amount) {
+    const dsa = this.chains[chainName].dsa
+
+    const spell = dsa.Spell()
+    spell.add({
+      connector: 'aave',
+      method: 'deposit',
+      args: ['0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', amount, 0, 0]
+    })
+
+    return await spell.cast()
+  }
+
+  async getTotalValueAllChains(userAddress) {
+    let totalValue = 0
+
+    for (const [name, config] of Object.entries(this.chains)) {
+      const accounts = await config.dsa.getAccounts(userAddress)
+
+      for (const account of accounts) {
+        // Fetch balance logic here
+        const balance = await this.getAccountBalance(config.dsa, account)
+        totalValue += balance
+      }
+    }
+
+    return totalValue
+  }
+
+  async getAccountBalance(dsa, account) {
+    // Implement balance fetching logic
+    return 0
+  }
+}
+
+// Usage
+const multiChainDSA = new MultiChainDSA()
+
+await multiChainDSA.initialize(
+  {
+    ethereum: 'https://eth-mainnet.alchemyapi.io/v2/KEY',
+    polygon: 'https://polygon-rpc.com',
+    arbitrum: 'https://arb1.arbitrum.io/rpc'
+  },
+  process.env.PRIVATE_KEY
+)
+
+const accounts = await multiChainDSA.getAccountsAllChains(userAddress)
+console.log('Accounts per chain:', accounts)
+
+// Deposit on Polygon
+await multiChainDSA.depositOnChain('polygon', '1000000000000000000')
+```
+
+## Network Switching in Browser
+
+### Request Network Switch
+
+```javascript
+async function switchToNetwork(chainId) {
+  const chainParams = {
+    1: {
+      chainId: '0x1',
+      chainName: 'Ethereum Mainnet'
+    },
+    137: {
+      chainId: '0x89',
+      chainName: 'Polygon',
+      rpcUrls: ['https://polygon-rpc.com'],
+      nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+      blockExplorerUrls: ['https://polygonscan.com']
+    },
+    42161: {
+      chainId: '0xa4b1',
+      chainName: 'Arbitrum One',
+      rpcUrls: ['https://arb1.arbitrum.io/rpc'],
+      nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+      blockExplorerUrls: ['https://arbiscan.io']
+    }
+  }
+
+  try {
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: chainParams[chainId].chainId }]
+    })
+  } catch (error) {
+    // Chain not added, try to add it
+    if (error.code === 4902) {
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [chainParams[chainId]]
+      })
+    }
+  }
+}
+
+// Switch to Polygon
+await switchToNetwork(137)
+```
+
+## RPC Endpoints
+
+Recommended RPC endpoints for each chain:
+
+| Chain | Public RPC | Recommended Provider |
+|-------|-----------|---------------------|
+| Ethereum (1) | `https://cloudflare-eth.com` | Alchemy, Infura |
+| Polygon (137) | `https://polygon-rpc.com` | Alchemy, QuickNode |
+| Arbitrum (42161) | `https://arb1.arbitrum.io/rpc` | Alchemy, Infura |
+| Optimism (10) | `https://mainnet.optimism.io` | Alchemy, QuickNode |
+| Avalanche (43114) | `https://api.avax.network/ext/bc/C/rpc` | Infura |
+| Fantom (250) | `https://rpc.ftm.tools` | Ankr |
+| Base (8453) | `https://mainnet.base.org` | Alchemy, QuickNode |
+| BSC (56) | `https://bsc-dataseed.binance.org` | Ankr, QuickNode |
+
+<Warning>
+  Public RPCs may have rate limits. For production applications, use dedicated RPC providers like Alchemy, Infura, or QuickNode.
+</Warning>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Validate Chain Before Operations">
+    Always verify you're on the correct chain:
+
+    ```javascript
+    const currentChainId = await web3.eth.getChainId()
+    if (currentChainId !== expectedChainId) {
+      console.error('Wrong network!')
+      // Prompt user to switch
+      await switchToNetwork(expectedChainId)
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Handle Network Changes">
+    Listen for and handle network changes:
+
+    ```javascript
+    window.ethereum.on('chainChanged', async (chainId) => {
+      // Reload or reinitialize
+      window.location.reload()
+    })
+    ```
+  </Accordion>
+
+  <Accordion title="Chain-Specific Token Addresses">
+    Remember that token addresses differ across chains:
+
+    ```javascript
+    const USDC = {
+      1: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+      137: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
+      42161: '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
+    }
+
+    const usdcAddress = USDC[dsa.instance.chainId]
+    ```
+  </Accordion>
+
+  <Accordion title="Gas Optimization per Chain">
+    Optimize gas strategies per chain:
+
+    ```javascript
+    function getGasConfig(chainId) {
+      switch(chainId) {
+        case 1: // Ethereum - be careful with gas
+          return { maxFeePerGas: '50000000000' }
+        case 137: // Polygon - gas is cheap
+          return { maxFeePerGas: '100000000000' }
+        case 42161: // Arbitrum - very cheap
+          return { gasPrice: '100000000' }
+        default:
+          return {}
+      }
+    }
+
+    await spell.cast(getGasConfig(dsa.instance.chainId))
+    ```
+  </Accordion>
+
+  <Accordion title="Maintain Separate Instances">
+    Keep separate DSA instances for each chain:
+
+    ```javascript
+    const instances = {
+      eth: new DSA(web3Eth, 1),
+      polygon: new DSA(web3Polygon, 137),
+      arbitrum: new DSA(web3Arbitrum, 42161)
+    }
+
+    // Use the appropriate instance
+    await instances.polygon.build()
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Connectors Reference" icon="plug" href="/concepts/connectors">
+    See which protocols are available on each chain
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/dsa-class">
+    Complete API documentation
+  </Card>
+</CardGroup>

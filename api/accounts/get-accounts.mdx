@@ -1,0 +1,204 @@
+---
+title: "getAccounts()"
+description: "Retrieve all DSA accounts owned by a specific authority address"
+---
+
+## Description
+
+The `getAccounts()` method retrieves all DSA (DeFi Smart Account) instances that are owned by a specific authority address. This is useful for discovering all DSA accounts that a user controls.
+
+## Syntax
+
+```typescript
+await dsa.getAccounts(authority: string)
+```
+
+## Parameters
+
+<ParamField path="authority" type="string" required>
+  The ethereum address or ENS name (e.g., "vitalik.eth") of the authority whose DSA accounts you want to retrieve. If not provided, it will use the currently connected wallet address.
+</ParamField>
+
+## Returns
+
+<ResponseField type="Promise<Account[]>">
+  Returns a promise that resolves to an array of account objects. Each account object contains:
+  
+  <Expandable title="Account object properties">
+    <ResponseField name="id" type="number">
+      The unique ID of the DSA account.
+    </ResponseField>
+    
+    <ResponseField name="address" type="string">
+      The ethereum address of the DSA smart contract.
+    </ResponseField>
+    
+    <ResponseField name="version" type="number">
+      The version number of the DSA (1 or 2).
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Usage
+
+### Get Accounts by Address
+
+```typescript
+import { DSA } from "dsa-connect";
+import Web3 from "web3";
+
+const web3 = new Web3(window.ethereum);
+const dsa = new DSA(web3, 1); // 1 for Ethereum mainnet
+
+// Get all DSA accounts for a specific address
+const accounts = await dsa.getAccounts("0x1234...");
+
+console.log(`Found ${accounts.length} DSA accounts:`);
+accounts.forEach((account) => {
+  console.log(`ID: ${account.id}`);
+  console.log(`Address: ${account.address}`);
+  console.log(`Version: ${account.version}`);
+  console.log("---");
+});
+```
+
+### Get Accounts by ENS Name
+
+```typescript
+// Get all DSA accounts for an ENS name
+const accounts = await dsa.getAccounts("vitalik.eth");
+
+console.log(`DSAs owned by vitalik.eth:`, accounts);
+```
+
+### Get Accounts for Connected Wallet
+
+```typescript
+// Get accounts for the currently connected wallet
+const userAddress = (await web3.eth.getAccounts())[0];
+const accounts = await dsa.getAccounts(userAddress);
+
+if (accounts.length === 0) {
+  console.log("No DSA accounts found. Create one with dsa.build()");
+} else {
+  console.log(`You have ${accounts.length} DSA account(s)`);
+}
+```
+
+### Select and Set Active Account
+
+```typescript
+// Get all accounts and set the first one as active
+const accounts = await dsa.getAccounts("0x...");
+
+if (accounts.length > 0) {
+  // Set the first account as the active instance
+  await dsa.setInstance(accounts[0].id);
+  console.log(`Active DSA set to ID: ${accounts[0].id}`);
+  console.log(`Active DSA address: ${accounts[0].address}`);
+}
+```
+
+### Filter by Version
+
+```typescript
+// Get all accounts and filter by version
+const accounts = await dsa.getAccounts("0x...");
+
+// Get only version 2 accounts (recommended)
+const v2Accounts = accounts.filter((account) => account.version === 2);
+
+console.log(`Found ${v2Accounts.length} version 2 DSA accounts`);
+```
+
+### Display Account Details
+
+```typescript
+const accounts = await dsa.getAccounts("0x...");
+
+accounts.forEach((account, index) => {
+  console.log(`\nAccount ${index + 1}:`);
+  console.log(`  ID: ${account.id}`);
+  console.log(`  Address: ${account.address}`);
+  console.log(`  Version: ${account.version}`);
+  console.log(`  Type: ${account.version === 2 ? "Latest" : "Legacy"}`);
+});
+```
+
+## Return Value Example
+
+```typescript
+[
+  {
+    id: 12345,
+    address: "0xabcd...",
+    version: 2
+  },
+  {
+    id: 12346,
+    address: "0xef01...",
+    version: 2
+  }
+]
+```
+
+## Notes
+
+- The method returns an empty array if no DSA accounts are found for the specified authority
+- ENS names are automatically resolved to ethereum addresses
+- The method queries the blockchain, so it will always return the most up-to-date list of accounts
+- Authority addresses can control multiple DSA accounts
+- Each DSA account has a unique ID that can be used with `setInstance()` to make it the active account
+
+## Error Handling
+
+```typescript
+try {
+  const accounts = await dsa.getAccounts("0x...");
+  
+  if (accounts.length === 0) {
+    console.log("No DSA accounts found for this address");
+  } else {
+    console.log(`Found ${accounts.length} DSA account(s)`);
+  }
+} catch (error) {
+  console.error("Failed to fetch accounts:", error.message);
+}
+```
+
+## Common Use Cases
+
+### Check if User Has DSA
+
+```typescript
+const userAddress = (await web3.eth.getAccounts())[0];
+const accounts = await dsa.getAccounts(userAddress);
+
+if (accounts.length === 0) {
+  console.log("User needs to create a DSA");
+  // Prompt user to call dsa.build()
+} else {
+  console.log("User has existing DSA accounts");
+  // Set instance and proceed
+  await dsa.setInstance(accounts[0].id);
+}
+```
+
+### List All DSAs in UI
+
+```typescript
+const accounts = await dsa.getAccounts(userAddress);
+
+// Display in your UI
+const accountList = accounts.map((account) => ({
+  label: `DSA #${account.id} (v${account.version})`,
+  value: account.id,
+  address: account.address,
+}));
+```
+
+## Related Methods
+
+- [`build()`](/api/accounts/build) - Create a new DSA account
+- [`setInstance()`](/api/accounts/set-instance) - Set the active DSA instance
+- [`count()`](/api/utilities/helpers) - Get the total number of DSAs globally

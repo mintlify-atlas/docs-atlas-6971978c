@@ -1,0 +1,229 @@
+---
+title: 'add()'
+description: 'Add a connector function to the spell sequence'
+---
+
+## Overview
+
+The `add()` method adds a connector function call to the spell sequence. Multiple spells can be chained together to create complex multi-protocol transactions that execute atomically.
+
+## Syntax
+
+```js
+spells.add(spell)
+```
+
+## Parameters
+
+<ParamField path="spell" type="object" required>
+  The spell object containing connector, method, and arguments
+  
+  <Expandable title="properties">
+    <ParamField path="connector" type="string" required>
+      The connector name identifying which DeFi protocol to interact with (e.g., "aave", "compound", "uniswap")
+    </ParamField>
+    
+    <ParamField path="method" type="string" required>
+      The method name to call on the connector (e.g., "deposit", "borrow", "withdraw")
+    </ParamField>
+    
+    <ParamField path="args" type="any[]" required>
+      Array of arguments to pass to the connector method. The specific arguments depend on the connector and method being called.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Returns
+
+<ResponseField name="spells" type="Spells">
+  Returns the spell instance to enable method chaining
+</ResponseField>
+
+## Examples
+
+### Single Spell
+
+Deposit 1 ETH to Aave:
+
+```js
+const spells = dsa.Spell()
+
+spells.add({
+  connector: "aave",
+  method: "deposit",
+  args: [
+    "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", // ETH address
+    "1000000000000000000", // 1 ETH (10^18 wei)
+    0,
+    0
+  ]
+})
+
+await spells.cast()
+```
+
+### Chaining Multiple Spells
+
+Deposit ETH to Aave and borrow DAI:
+
+```js
+const spells = dsa.Spell()
+
+spells
+  .add({
+    connector: "aave",
+    method: "deposit",
+    args: [
+      "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "1000000000000000000", // 1 ETH
+      0,
+      0
+    ]
+  })
+  .add({
+    connector: "aave",
+    method: "borrow",
+    args: [
+      "0x6B175474E89094C44Da98b954EedeAC495271d0F", // DAI address
+      "100000000000000000000", // 100 DAI
+      0,
+      0
+    ]
+  })
+
+await spells.cast()
+```
+
+### Multi-Protocol Transaction
+
+Deposit to Aave, borrow DAI, and supply DAI to Compound:
+
+```js
+const spells = dsa.Spell()
+
+// Deposit 1 ETH to Aave
+spells.add({
+  connector: "aave",
+  method: "deposit",
+  args: [
+    "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "1000000000000000000", // 1 ETH
+    0,
+    0
+  ]
+})
+
+// Borrow 100 DAI from Aave
+spells.add({
+  connector: "aave",
+  method: "borrow",
+  args: [
+    "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    "100000000000000000000", // 100 DAI
+    0,
+    0
+  ]
+})
+
+// Deposit borrowed DAI to Compound
+spells.add({
+  connector: "compound",
+  method: "deposit",
+  args: [
+    "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    "100000000000000000000", // 100 DAI
+    0,
+    0
+  ]
+})
+
+await spells.cast()
+```
+
+## Validation
+
+The `add()` method performs validation on the spell object:
+
+- **connector**: Must be defined, throws error if missing
+- **method**: Must be defined, throws error if missing
+- **args**: Must be defined, throws error if missing
+
+```js
+// This will throw an error
+spells.add({
+  connector: "aave"
+  // Missing method and args
+})
+// Error: method not defined.
+```
+
+## Common Connector Arguments
+
+### Aave Deposit
+
+```js
+args: [
+  token,      // Token address (0xeee...eee for ETH)
+  amt,        // Amount in wei
+  getId,      // ID to retrieve amount (0 for direct value)
+  setId       // ID to store amount (0 if not storing)
+]
+```
+
+### Aave Borrow
+
+```js
+args: [
+  token,      // Token address to borrow
+  amt,        // Amount to borrow in wei
+  rateMode,   // Interest rate mode (1 for stable, 2 for variable)
+  getId,      // ID to retrieve amount
+  setId       // ID to store amount
+]
+```
+
+### Compound Deposit
+
+```js
+args: [
+  token,      // Token address
+  amt,        // Amount in wei
+  getId,      // ID to retrieve amount
+  setId       // ID to store amount
+]
+```
+
+## Best Practices
+
+1. **Check Balances**: Ensure your DSA has sufficient balance before adding deposit or borrow spells
+2. **Use Method Chaining**: Chain multiple `add()` calls for cleaner code
+3. **Atomic Execution**: All spells in a sequence execute atomically - if one fails, all fail
+4. **Connector Names**: Use lowercase connector names consistently
+5. **Amount Precision**: Always use wei amounts (multiply by 10^18 for ETH/DAI)
+
+## Error Handling
+
+```js
+try {
+  spells.add({
+    connector: "aave",
+    method: "deposit",
+    args: [
+      "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "1000000000000000000",
+      0,
+      0
+    ]
+  })
+  
+  await spells.cast()
+} catch (error) {
+  console.error('Spell execution failed:', error)
+}
+```
+
+## See Also
+
+- [Spell Class](/api/spells/spell-class) - Complete Spell class documentation
+- [cast()](/api/spells/cast) - Execute spell sequences
+- [Connectors](https://github.com/InstaDApp/dsa-connectors-new/blob/main/README.md) - Available connectors and methods

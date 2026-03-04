@@ -1,0 +1,479 @@
+---
+title: 'Spells'
+description: 'Learn how to compose multi-step DeFi transactions using the spell system'
+icon: 'wand-magic-sparkles'
+---
+
+## What are Spells?
+
+Spells are sequences of connector functions that compose into complex DeFi transactions. A spell can contain any number of actions across any number of protocols, all executed atomically in a single transaction.
+
+<Info>
+Think of spells as a recipe - each step (connector method call) is an ingredient, and the final cast is cooking the meal.
+</Info>
+
+## Core Concepts
+
+### Atomic Execution
+
+All actions in a spell are executed atomically - either all succeed or all fail. This guarantees consistency and prevents partial execution that could leave your funds in an unintended state.
+
+### Composability
+
+Spells leverage the composability of DeFi protocols. You can chain actions together where the output of one step becomes the input of the next, creating complex strategies.
+
+### Gas Efficiency
+
+By batching multiple operations into a single transaction, spells significantly reduce gas costs compared to executing each operation separately.
+
+## Spell Structure
+
+Each spell consists of individual actions with three components:
+
+```typescript
+type Spell = {
+  connector: string  // The protocol connector name (e.g., 'AAVE-V3-A')
+  method: string     // The connector method to call (e.g., 'deposit')
+  args: any[]        // Arguments for the method
+}
+```
+
+## Creating Spells
+
+### Basic Spell Creation
+
+Create a new spell instance using the `Spell()` method:
+
+```javascript
+const spell = dsa.Spell()
+```
+
+### Adding Actions
+
+Add actions to your spell using the `add()` method:
+
+```javascript
+spell.add({
+  connector: 'AAVE-V3-A',
+  method: 'deposit',
+  args: [
+    '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // ETH address
+    '1000000000000000000', // 1 ETH (in wei)
+    0, // getId (0 = don't use stored value)
+    0  // setId (0 = don't store value)
+  ]
+})
+```
+
+<Note>
+The `add()` method returns the spell instance, enabling method chaining for a fluent API.
+</Note>
+
+## Casting Spells
+
+Once you've added all desired actions, execute the spell using the `cast()` method:
+
+```javascript
+const txHash = await spell.cast()
+console.log('Transaction hash:', txHash)
+```
+
+### Cast Parameters
+
+You can pass optional parameters to customize the transaction:
+
+```javascript
+await spell.cast({
+  from: '0x...',      // Sender address (defaults to connected account)
+  gasPrice: '50',     // Gas price in gwei
+  value: '1000000000000000000', // ETH to send with transaction (in wei)
+  nonce: 42           // Transaction nonce
+})
+```
+
+## Practical Examples
+
+### Example 1: Supply and Borrow
+
+Deposit ETH to Aave and borrow DAI:
+
+```javascript
+const spell = dsa.Spell()
+
+// Deposit 1 ETH to Aave V3
+spell.add({
+  connector: 'AAVE-V3-A',
+  method: 'deposit',
+  args: [
+    '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // ETH
+    web3.utils.toWei('1', 'ether'),
+    0,
+    0
+  ]
+})
+
+// Borrow 1000 DAI from Aave V3
+spell.add({
+  connector: 'AAVE-V3-A',
+  method: 'borrow',
+  args: [
+    '0x6B175474E89094C44Da98b954EedeAC495271d0F', // DAI address
+    web3.utils.toWei('1000', 'ether'),
+    2, // Variable rate mode
+    0,
+    0
+  ]
+})
+
+// Execute the spell
+const txHash = await spell.cast()
+```
+
+### Example 2: Yield Optimization
+
+Move funds from Compound to Aave for better yield:
+
+```javascript
+const spell = dsa.Spell()
+
+// Withdraw DAI from Compound
+spell.add({
+  connector: 'COMPOUND-V3-A',
+  method: 'withdraw',
+  args: [
+    daiMarket,
+    daiAddress,
+    withdrawAmount,
+    0,
+    1 // Store withdrawn amount in ID 1
+  ]
+})
+
+// Deposit withdrawn DAI to Aave
+spell.add({
+  connector: 'AAVE-V3-A',
+  method: 'deposit',
+  args: [
+    daiAddress,
+    0, // Use amount from ID 1
+    1, // Get amount from ID 1
+    0
+  ]
+})
+
+await spell.cast()
+```
+
+### Example 3: Swap and Supply
+
+Swap tokens and supply to a lending protocol:
+
+```javascript
+const spell = dsa.Spell()
+
+// Swap USDC to DAI using Uniswap V3
+spell.add({
+  connector: 'UNISWAP-V3-SWAP-A',
+  method: 'swap',
+  args: [
+    usdcAddress,  // Token in
+    daiAddress,   // Token out
+    swapAmount,   // Amount to swap
+    0,            // Min amount out (slippage protection)
+    0,            // getId
+    1             // setId - store output amount
+  ]
+})
+
+// Supply swapped DAI to Aave
+spell.add({
+  connector: 'AAVE-V3-A',
+  method: 'deposit',
+  args: [
+    daiAddress,
+    0,  // Use stored amount
+    1,  // getId - use amount from previous step
+    0
+  ]
+})
+
+await spell.cast()
+```
+
+## Advanced Features
+
+### Storage IDs (getId/setId)
+
+Storage IDs enable passing values between spell actions. This is crucial for creating dynamic strategies where one action's output feeds into another.
+
+<AccordionGroup>
+  <Accordion title="setId - Storing Values">
+    Use `setId` to store a value for use in subsequent actions:
+    
+    ```javascript
+    spell.add({
+      connector: 'COMPOUND-V3-A',
+      method: 'withdraw',
+      args: [market, token, amount, 0, 5] // Store in ID 5
+    })
+    ```
+  </Accordion>
+  
+  <Accordion title="getId - Retrieving Values">
+    Use `getId` to retrieve a previously stored value:
+    
+    ```javascript
+    spell.add({
+      connector: 'AAVE-V3-A',
+      method: 'deposit',
+      args: [token, 0, 5, 0] // Use value from ID 5
+    })
+    ```
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+**Storage ID 0 has special meaning**: It means "use the literal value" rather than looking up a stored value.
+</Warning>
+
+### Flash Loan Strategies
+
+Flash loans enable capital-efficient strategies by borrowing funds within a transaction:
+
+```javascript
+const spell = dsa.Spell()
+
+// 1. Borrow via flash loan
+spell.add({
+  connector: 'INSTAPOOL-D',
+  method: 'flashBorrow',
+  args: [
+    daiAddress,
+    flashLoanAmount,
+    0,
+    0
+  ]
+})
+
+// 2. Use borrowed funds for arbitrage/liquidation/refinancing
+spell.add({
+  connector: 'YOUR-STRATEGY',
+  method: 'execute',
+  args: [/* ... */]
+})
+
+// 3. Repay flash loan + fee
+spell.add({
+  connector: 'INSTAPOOL-D',
+  method: 'flashPayback',
+  args: [
+    daiAddress,
+    0,
+    0
+  ]
+})
+
+await spell.cast()
+```
+
+<Tip>
+Flash loans must be repaid within the same transaction. Ensure your strategy generates enough to cover the loan amount plus fees.
+</Tip>
+
+### Encoding Spells
+
+For advanced use cases, you can encode spells without executing them:
+
+```javascript
+const spell = dsa.Spell()
+spell.add({/* ... */})
+
+// Get encoded spell data
+const encodedSpells = await spell.encodeSpells()
+console.log(encodedSpells)
+// {
+//   targets: ['0x...', '0x...'],
+//   spells: ['0x...', '0x...']
+// }
+
+// Get full cast ABI encoding
+const castABI = await spell.encodeCastABI()
+```
+
+This is useful for:
+- Building custom transaction handlers
+- Integrating with multisig wallets
+- Creating meta-transactions
+- Testing and simulation
+
+### Gas Estimation
+
+Estimate gas costs before casting:
+
+```javascript
+const spell = dsa.Spell()
+spell.add({/* ... */})
+
+const estimatedGas = await spell.estimateCastGas()
+console.log(`Estimated gas: ${estimatedGas}`)
+```
+
+## Transaction Callbacks
+
+Monitor transaction status with callbacks:
+
+```javascript
+await spell.cast({
+  onReceipt: (receipt) => {
+    console.log('Transaction confirmed:', receipt.transactionHash)
+  },
+  onConfirmation: (confirmationNumber, receipt) => {
+    console.log(`Confirmation ${confirmationNumber}:`, receipt.transactionHash)
+  }
+})
+```
+
+## Error Handling
+
+Spells fail atomically - if any action fails, the entire transaction reverts:
+
+```javascript
+try {
+  const spell = dsa.Spell()
+  
+  spell.add({
+    connector: 'AAVE-V3-A',
+    method: 'deposit',
+    args: [/* ... */]
+  })
+  
+  await spell.cast()
+  console.log('Spell cast successfully!')
+} catch (error) {
+  console.error('Spell failed:', error.message)
+  // Handle failure - transaction was reverted, no state changes occurred
+}
+```
+
+<Note>
+Common failure reasons include:
+- Insufficient balance
+- Slippage tolerance exceeded
+- Protocol-specific errors (e.g., collateral ratio too low)
+- Gas estimation failure
+</Note>
+
+## Best Practices
+
+### 1. Test Before Mainnet
+
+Always test your spells on testnets or using simulation mode before executing on mainnet:
+
+```javascript
+const dsa = new DSA({
+  web3: web3,
+  mode: 'simulation',
+  publicKey: '0x...'
+})
+```
+
+### 2. Handle Max Values
+
+Use the provided max value constant for "max" operations:
+
+```javascript
+spell.add({
+  connector: 'AAVE-V3-A',
+  method: 'withdraw',
+  args: [
+    tokenAddress,
+    dsa.maxValue, // Withdraw entire balance
+    0,
+    0
+  ]
+})
+```
+
+### 3. Optimize Gas
+
+Order actions to minimize state changes and optimize gas usage:
+
+```javascript
+// Good: Batch similar operations
+spell.add({ connector: 'AAVE-V3-A', method: 'deposit', args: [token1, ...] })
+spell.add({ connector: 'AAVE-V3-A', method: 'deposit', args: [token2, ...] })
+
+// Less optimal: Interleave different protocols
+spell.add({ connector: 'AAVE-V3-A', method: 'deposit', args: [...] })
+spell.add({ connector: 'COMPOUND-V3-A', method: 'supply', args: [...] })
+spell.add({ connector: 'AAVE-V3-A', method: 'borrow', args: [...] })
+```
+
+### 4. Use Storage IDs for Dynamic Amounts
+
+When dealing with variable amounts (e.g., after swaps), use storage IDs:
+
+```javascript
+// Store swap output amount
+spell.add({
+  connector: 'UNISWAP-V3-SWAP-A',
+  method: 'swap',
+  args: [buyToken, sellToken, amount, minReturn, 0, 1] // setId = 1
+})
+
+// Use stored amount in next action
+spell.add({
+  connector: 'AAVE-V3-A',
+  method: 'deposit',
+  args: [sellToken, 0, 1, 0] // getId = 1
+})
+```
+
+### 5. Validate Parameters
+
+Ensure all parameters are correct before casting:
+
+```javascript
+const validateSpell = (spell) => {
+  if (!spell.data.length) {
+    throw new Error('Spell has no actions')
+  }
+  
+  spell.data.forEach((action, index) => {
+    if (!action.connector) throw new Error(`Action ${index}: missing connector`)
+    if (!action.method) throw new Error(`Action ${index}: missing method`)
+    if (!action.args) throw new Error(`Action ${index}: missing args`)
+  })
+}
+
+validateSpell(spell)
+await spell.cast()
+```
+
+## Common Patterns
+
+<CardGroup cols={2}>
+  <Card title="Refinancing" icon="rotate">
+    Move debt between protocols to optimize interest rates
+  </Card>
+  <Card title="Leveraging" icon="arrow-trend-up">
+    Build leveraged positions by borrowing and re-supplying
+  </Card>
+  <Card title="Yield Farming" icon="wheat">
+    Automate yield farming strategies across multiple protocols
+  </Card>
+  <Card title="Portfolio Rebalancing" icon="scale-balanced">
+    Adjust positions across protocols to maintain target allocation
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Connectors" icon="plug" href="/concepts/connectors">
+    Explore available protocol connectors
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/spells/spell-class">
+    View the complete Spell API
+  </Card>
+</CardGroup>

@@ -1,0 +1,330 @@
+---
+title: 'Instance'
+description: 'DSA instance interface representing a DeFi Smart Account'
+---
+
+## Overview
+
+The `Instance` interface represents a DeFi Smart Account (DSA) instance with its associated metadata. Each DSA has a unique ID, address, version, and operates on a specific blockchain network.
+
+## Type Definition
+
+```typescript
+interface Instance {
+  id: number
+  address: string
+  version: Version
+  chainId: ChainId
+}
+```
+
+## Properties
+
+<ResponseField name="id" type="number">
+  The unique identifier for the DSA instance. This is assigned sequentially when DSAs are created and is unique per address.
+</ResponseField>
+
+<ResponseField name="address" type="string">
+  The Ethereum address of the DSA smart contract. This is the address that holds assets and executes DeFi operations.
+</ResponseField>
+
+<ResponseField name="version" type="Version">
+  The DSA smart contract version number. Current version is 2. Different versions may have different features and capabilities.
+</ResponseField>
+
+<ResponseField name="chainId" type="ChainId">
+  The blockchain network ID where this DSA exists.
+  
+  Supported chains:
+  - `1` - Ethereum Mainnet
+  - `137` - Polygon (Matic)
+  - `42161` - Arbitrum One
+  - `43114` - Avalanche C-Chain
+  - `10` - Optimism
+  - `250` - Fantom Opera
+  - `8453` - Base
+  - `9745` - Plasma
+  - `56` - BNB Smart Chain
+</ResponseField>
+
+## Related Types
+
+### ChainId
+
+```typescript
+type ChainId = 1 | 137 | 42161 | 43114 | 10 | 250 | 8453 | 9745 | 56
+```
+
+### Version
+
+```typescript
+type Version = 1 | 2
+```
+
+The version type represents the DSA smart contract version. Version 2 is the current recommended version with enhanced features.
+
+## Accessing the Instance
+
+The current instance is available as a property on the DSA class:
+
+```typescript
+import DSA from 'dsa-connect'
+import Web3 from 'web3'
+
+const web3 = new Web3(window.ethereum)
+const dsa = new DSA(web3, 1)
+
+// Default instance (not yet set)
+console.log(dsa.instance)
+// {
+//   id: 0,
+//   address: '0x0000000000000000000000000000000000000000',
+//   version: 1,
+//   chainId: 1
+// }
+
+// Set a specific DSA instance
+await dsa.setInstance(123)
+
+// Now instance is populated with real data
+console.log(dsa.instance)
+// {
+//   id: 123,
+//   address: '0x1234...', // Actual DSA address
+//   version: 2,
+//   chainId: 1
+// }
+```
+
+## Setting the Instance
+
+There are multiple ways to set the current DSA instance:
+
+### setInstance()
+
+```typescript
+const instance = await dsa.setInstance(123)
+console.log(instance.id)       // 123
+console.log(instance.address)  // '0x...'
+console.log(instance.version)  // 2
+console.log(instance.chainId)  // 1
+```
+
+### setAccount()
+
+Alias for `setInstance()`:
+
+```typescript
+await dsa.setAccount(123)
+```
+
+### getAccountIdDetails()
+
+Get instance details without setting it as current:
+
+```typescript
+const details = await dsa.getAccountIdDetails(123)
+console.log(details) // Instance object
+```
+
+## Default Instance
+
+When the DSA class is initialized, it has a default instance with placeholder values:
+
+<ResponseField name="Default Instance Values">
+  ```typescript
+  {
+    id: 0,
+    address: '0x0000000000000000000000000000000000000000', // Genesis address
+    version: 1,
+    chainId: 1 // Or the chainId provided to constructor
+  }
+  ```
+</ResponseField>
+
+<Warning>
+  You must call `setInstance()` or `setAccount()` before performing operations like `cast()`. Operations will fail if the instance address is the genesis address.
+</Warning>
+
+## Usage Patterns
+
+### Check if Instance is Set
+
+```typescript
+import { Addresses } from 'dsa-connect' // If exported
+
+const isInstanceSet = () => {
+  return dsa.instance.id !== 0 && 
+         dsa.instance.address !== '0x0000000000000000000000000000000000000000'
+}
+
+if (!isInstanceSet()) {
+  console.log('Please set a DSA instance first')
+  await dsa.setInstance(123)
+}
+```
+
+### Get Instance Info
+
+```typescript
+const logInstanceInfo = () => {
+  const { id, address, version, chainId } = dsa.instance
+  
+  console.log(`DSA #${id}`)
+  console.log(`Address: ${address}`)
+  console.log(`Version: ${version}`)
+  console.log(`Chain: ${chainId}`)
+}
+```
+
+### Switch Between Instances
+
+```typescript
+// Set first DSA
+await dsa.setInstance(123)
+await dsa.cast(spells1)
+
+// Switch to another DSA
+await dsa.setInstance(456)
+await dsa.cast(spells2)
+
+// Back to first DSA
+await dsa.setInstance(123)
+```
+
+### Get All Accounts and Set First
+
+```typescript
+const accounts = await dsa.getAccounts('0xYourAddress')
+
+if (accounts.length > 0) {
+  await dsa.setInstance(accounts[0].id)
+  console.log(`Set to DSA #${accounts[0].id}`)
+} else {
+  console.log('No DSA accounts found. Building a new one...')
+  await dsa.build({
+    authority: '0xYourAddress',
+    version: 2
+  })
+}
+```
+
+## Chain-Specific Instances
+
+DSA instances are chain-specific. An instance on Ethereum is completely separate from an instance on Polygon, even if they have the same ID:
+
+```typescript
+// Ethereum DSA
+const ethDSA = new DSA(ethWeb3, 1)
+await ethDSA.setInstance(123)
+console.log(ethDSA.instance.chainId) // 1
+
+// Polygon DSA
+const polygonDSA = new DSA(polygonWeb3, 137)
+await polygonDSA.setInstance(123)
+console.log(polygonDSA.instance.chainId) // 137
+
+// These are different DSAs on different chains!
+console.log(ethDSA.instance.address !== polygonDSA.instance.address) // true
+```
+
+## Version Differences
+
+### Version 1
+
+- Original DSA implementation
+- Basic functionality for DeFi operations
+
+### Version 2 (Current)
+
+- Enhanced features and optimizations
+- Improved gas efficiency
+- Additional connector support
+- Recommended for all new DSAs
+
+When building a new DSA, version 2 is used by default:
+
+```typescript
+await dsa.build({
+  version: 2 // Default, can be omitted
+})
+```
+
+## Instance Validation
+
+The SDK validates DSA instances when setting them:
+
+```typescript
+try {
+  await dsa.setInstance(999999)
+} catch (error) {
+  // Error: dsaId does not exist. Run `dsa.build()` to create a new DSA.
+}
+```
+
+## Building New Instances
+
+Create a new DSA instance:
+
+```typescript
+const txHash = await dsa.build({
+  authority: '0xYourAddress',  // Who controls the DSA
+  version: 2,                   // DSA version
+  origin: '0xAffiliateAddress' // Optional: for analytics
+})
+
+// After transaction confirms, get the new DSA ID from events
+// Then set it as current instance
+const accounts = await dsa.getAccounts('0xYourAddress')
+const newDSA = accounts[accounts.length - 1] // Latest DSA
+await dsa.setInstance(newDSA.id)
+```
+
+## Complete Example
+
+```typescript
+import DSA from 'dsa-connect'
+import Web3 from 'web3'
+
+const setupDSA = async () => {
+  const web3 = new Web3(window.ethereum)
+  const dsa = new DSA(web3, 1)
+  
+  const address = (await web3.eth.getAccounts())[0]
+  
+  // Get all DSAs for this address
+  const accounts = await dsa.getAccounts(address)
+  
+  if (accounts.length === 0) {
+    console.log('No DSA found. Creating new one...')
+    await dsa.build({ authority: address, version: 2 })
+    
+    // Fetch again after building
+    const newAccounts = await dsa.getAccounts(address)
+    await dsa.setInstance(newAccounts[0].id)
+  } else {
+    // Use first existing DSA
+    await dsa.setInstance(accounts[0].id)
+  }
+  
+  // Log instance details
+  const { id, address: dsaAddress, version, chainId } = dsa.instance
+  console.log(`Using DSA #${id} at ${dsaAddress} (v${version} on chain ${chainId})`)
+  
+  return dsa
+}
+
+setupDSA()
+```
+
+## Summary
+
+The Instance interface is central to DSA operations:
+
+- Represents a single DSA smart contract
+- Contains ID, address, version, and chain information
+- Must be set before executing operations
+- Can be switched to control different DSAs
+- Chain-specific and version-specific
+
+Always ensure an instance is properly set before calling methods like `cast()`, `build()`, or other DSA operations.

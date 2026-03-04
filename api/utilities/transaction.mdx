@@ -1,0 +1,313 @@
+---
+title: Transaction
+description: Transaction management utilities for sending, canceling, and speeding up transactions
+---
+
+## Transaction
+
+Utility class for managing Ethereum transactions.
+
+### Constructor
+
+The Transaction class is automatically instantiated and available as `dsa.transaction`.
+
+### Methods
+
+#### send
+
+Send a transaction and get the transaction hash.
+
+```typescript
+await dsa.transaction.send(
+  transactionConfig: TransactionConfig,
+  callbacks?: TransactionCallbacks
+): Promise<string>
+```
+
+**Parameters:**
+
+<ParamField path="transactionConfig" type="TransactionConfig" required>
+  Web3 transaction configuration object
+</ParamField>
+
+<ParamField path="callbacks" type="TransactionCallbacks">
+  Optional callbacks for transaction events
+</ParamField>
+
+**TransactionConfig:**
+
+```typescript
+interface TransactionConfig {
+  from: string;     // Sender address
+  to: string;       // Recipient address
+  data?: string;    // Transaction data
+  value?: string;   // ETH value in wei
+  gas?: string | number;     // Gas limit
+  gasPrice?: string | number; // Gas price (legacy)
+  maxFeePerGas?: string | number; // EIP-1559
+  maxPriorityFeePerGas?: string | number; // EIP-1559
+  nonce?: number;   // Transaction nonce
+}
+```
+
+**TransactionCallbacks:**
+
+```typescript
+interface TransactionCallbacks {
+  onReceipt?: (receipt: TransactionReceipt) => void;
+  onConfirmation?: (
+    confirmationNumber: number,
+    receipt: TransactionReceipt,
+    latestBlockHash?: string
+  ) => void;
+}
+```
+
+**Returns:** Transaction hash as a string
+
+**Example:**
+
+```typescript
+const txConfig = {
+  from: "0xYourAddress...",
+  to: dsa.instance.address,
+  data: "0x...",
+  value: "0",
+  gas: "500000"
+};
+
+const txHash = await dsa.transaction.send(txConfig, {
+  onReceipt: (receipt) => {
+    console.log("Transaction mined:", receipt);
+  },
+  onConfirmation: (confirmationNumber, receipt) => {
+    console.log(`Confirmation ${confirmationNumber}`);
+  }
+});
+
+console.log("Transaction hash:", txHash);
+```
+
+<Note>
+In node mode, transactions are automatically signed using the configured private key. In browser mode, the wallet provider handles signing.
+</Note>
+
+#### cancel
+
+Cancel a pending transaction by sending a zero-value transaction with the same nonce and higher gas price.
+
+```typescript
+await dsa.transaction.cancel(params: {
+  nonce: number | string;
+  gasPrice: string | number;
+}): Promise<string>
+```
+
+**Parameters:**
+
+<ParamField path="nonce" type="number | string" required>
+  Nonce of the transaction to cancel
+</ParamField>
+
+<ParamField path="gasPrice" type="string | number" required>
+  Gas price higher than the original transaction
+</ParamField>
+
+**Returns:** Transaction hash of the cancellation transaction
+
+**Example:**
+
+```typescript
+// Cancel transaction with nonce 42
+const cancelTxHash = await dsa.transaction.cancel({
+  nonce: 42,
+  gasPrice: "50000000000" // 50 Gwei
+});
+
+console.log("Cancellation transaction:", cancelTxHash);
+```
+
+<Warning>
+The gas price must be higher than the original transaction for the cancellation to succeed. The transaction sends 0 ETH to your own address with gas limit of 27500.
+</Warning>
+
+#### speedUp
+
+Speed up a pending transaction by resubmitting it with a higher gas price.
+
+```typescript
+await dsa.transaction.speedUp(
+  dsa: DSA,
+  params: {
+    transactionHash: string;
+    gasPrice: string | number;
+  }
+): Promise<string>
+```
+
+**Parameters:**
+
+<ParamField path="transactionHash" type="string" required>
+  Hash of the transaction to speed up
+</ParamField>
+
+<ParamField path="gasPrice" type="string | number" required>
+  New gas price (must be higher than the original)
+</ParamField>
+
+**Returns:** Transaction hash of the new transaction
+
+**Example:**
+
+```typescript
+// Speed up a pending transaction
+const newTxHash = await dsa.transaction.speedUp(dsa, {
+  transactionHash: "0xOriginalTxHash...",
+  gasPrice: "60000000000" // 60 Gwei
+});
+
+console.log("New transaction hash:", newTxHash);
+```
+
+<Note>
+The method fetches the original transaction details and resubmits it with the same parameters but a higher gas price. The sender address must match the original transaction.
+</Note>
+
+#### getNonce
+
+Get the nonce of a specific transaction.
+
+```typescript
+await dsa.transaction.getNonce(transactionHash: string): Promise<number>
+```
+
+**Parameters:**
+
+<ParamField path="transactionHash" type="string" required>
+  Transaction hash to query
+</ParamField>
+
+**Returns:** Nonce of the transaction
+
+**Example:**
+
+```typescript
+const nonce = await dsa.transaction.getNonce("0xTxHash...");
+console.log("Transaction nonce:", nonce);
+```
+
+#### getTransactionCount
+
+Get the total number of transactions sent from an address (current nonce).
+
+```typescript
+await dsa.transaction.getTransactionCount(address: string): Promise<number>
+```
+
+**Parameters:**
+
+<ParamField path="address" type="string" required>
+  Address to query
+</ParamField>
+
+**Returns:** Transaction count for the address
+
+**Example:**
+
+```typescript
+const count = await dsa.transaction.getTransactionCount("0xAddress...");
+console.log("Total transactions:", count);
+```
+
+---
+
+## Alias
+
+The `send` method is also aliased as `dsa.sendTransaction()` for convenience:
+
+```typescript
+// These are equivalent
+await dsa.transaction.send(txConfig);
+await dsa.sendTransaction(txConfig);
+```
+
+---
+
+## Transaction Flow
+
+### Browser Mode
+
+In browser mode, Web3 sends transactions through the connected wallet provider (MetaMask, WalletConnect, etc.):
+
+```typescript
+const dsa = new DSA(web3);
+
+// Wallet will prompt for signature
+const txHash = await dsa.sendTransaction({
+  from: "0xYourAddress...",
+  to: dsa.instance.address,
+  data: "0x..."
+});
+```
+
+### Node Mode
+
+In node mode, transactions are automatically signed using the configured private key:
+
+```typescript
+const dsa = new DSA({
+  web3: web3,
+  mode: "node",
+  privateKey: "0xYourPrivateKey..."
+});
+
+// Automatically signed and sent
+const txHash = await dsa.sendTransaction({
+  from: "0xYourAddress...",
+  to: dsa.instance.address,
+  data: "0x...",
+  gasPrice: "50000000000", // Required in node mode
+  nonce: 42 // Required in node mode
+});
+```
+
+<Warning>
+In node mode, `gasPrice` (or `maxFeePerGas` + `maxPriorityFeePerGas`) and `nonce` are required parameters.
+</Warning>
+
+---
+
+## Types
+
+### TransactionConfig
+
+```typescript
+import { TransactionConfig } from 'web3-core';
+
+interface TransactionConfig {
+  from: string;
+  to: string;
+  data?: string;
+  value?: string | number;
+  gas?: string | number;
+  gasPrice?: string | number;
+  maxFeePerGas?: string | number;
+  maxPriorityFeePerGas?: string | number;
+  nonce?: number;
+}
+```
+
+### TransactionCallbacks
+
+```typescript
+import { TransactionReceipt } from 'web3-core';
+
+interface TransactionCallbacks {
+  onReceipt?: (receipt: TransactionReceipt) => void;
+  onConfirmation?: (
+    confirmationNumber: number,
+    receipt: TransactionReceipt,
+    latestBlockHash?: string
+  ) => void;
+}
+```

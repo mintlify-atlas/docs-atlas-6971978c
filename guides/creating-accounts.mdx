@@ -1,0 +1,370 @@
+---
+title: "Creating and Managing Accounts"
+description: "Guide for creating and managing DSA (DeFi Smart Account) accounts"
+---
+
+Every user needs to create a Smart Account to interact with DeFi protocols seamlessly. DSA accounts allow developers to build extensible use-cases with maximum security and composability.
+
+## Overview
+
+DSA accounts are smart contract wallets that:
+- Act as a proxy to interact with verified DeFi protocols
+- Have a unique Ethereum address
+- Are uniquely numbered for easy identification
+- Support multiple authorities (authorized addresses)
+- Can be created multiple times for a single address
+
+## Creating a DSA Account
+
+<Steps>
+  <Step title="Build a New Account">
+    Use the `build()` method to create a new DSA account:
+
+    ```javascript
+    const txHash = await dsa.build()
+    console.log('Transaction Hash:', txHash)
+    ```
+
+    This creates a new DSA account with your connected address as the authority.
+  </Step>
+
+  <Step title="Wait for Confirmation">
+    Wait for the transaction to be confirmed on-chain:
+
+    ```javascript
+    const receipt = await web3.eth.getTransactionReceipt(txHash)
+    console.log('DSA created successfully')
+    ```
+  </Step>
+
+  <Step title="Get Your DSA ID">
+    Retrieve your newly created DSA account:
+
+    ```javascript
+    const accounts = await dsa.getAccounts(yourAddress)
+    const latestAccount = accounts[accounts.length - 1]
+    console.log('DSA ID:', latestAccount.id)
+    console.log('DSA Address:', latestAccount.address)
+    ```
+  </Step>
+</Steps>
+
+## Build Options
+
+The `build()` method accepts optional parameters:
+
+```javascript
+await dsa.build({
+  authority: '0x...', // Authority address (defaults to from address)
+  origin: '0x...', // Origin address for analytics
+  version: 2, // DSA version (default: 2)
+  from: '0x...', // Account creating the DSA
+  gasPrice: '50000000000', // Gas price in wei
+  gas: 500000, // Gas limit
+  nonce: 10 // Transaction nonce
+})
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `authority` | address | The DSA authority. The address to be added as authority (defaults to `from` address) |
+| `origin` | address | The address to track the origin of transaction for analytics and affiliates |
+| `version` | number | DSA version (1 or 2, default is 2) |
+| `from` | address | The account creating the DSA (helpful to create DSA for other addresses) |
+| `gasPrice` | string/number | Gas price in wei (mostly used in Node implementation) |
+| `gas` | string/number | Gas limit for the transaction |
+| `nonce` | string/number | Nonce of your sender account (mostly used in Node implementation) |
+
+## Advanced Build Examples
+
+<CodeGroup>
+```javascript Create with Custom Authority
+// Create DSA with a different authority
+await dsa.build({
+  authority: '0xMultiSigWallet...', // Use a multisig as authority
+  origin: '0xYourDapp...', // Track your dapp as origin
+})
+```
+
+```javascript Create for Another Address
+// Create DSA for another user
+await dsa.build({
+  from: '0xYourAddress...',
+  authority: '0xOtherUserAddress...', // They will control this DSA
+})
+```
+
+```javascript Node.js with Gas Configuration
+// Node.js with explicit gas settings
+const gasPrice = await web3.eth.getGasPrice()
+const txHash = await dsa.build({
+  gasPrice: gasPrice,
+  gas: 500000,
+  nonce: await web3.eth.getTransactionCount(fromAddress)
+})
+```
+</CodeGroup>
+
+## Fetching DSA Accounts
+
+### Get All Accounts
+
+Fetch all DSA accounts owned by an Ethereum address:
+
+```javascript
+const accounts = await dsa.getAccounts('0xUserAddress...')
+console.log(accounts)
+```
+
+**Response:**
+```javascript
+[
+  {
+    id: 52, // DSA ID
+    address: '0x...', // DSA Address
+    version: 2 // DSA version
+  },
+  {
+    id: 73,
+    address: '0x...',
+    version: 2
+  }
+]
+```
+
+### Count Accounts
+
+Get the total number of DSA accounts for an address:
+
+```javascript
+const count = await dsa.count('0xUserAddress...')
+console.log(`User has ${count} DSA accounts`)
+```
+
+## Setting Active Instance
+
+Before casting spells, you must set which DSA account to use:
+
+```javascript
+// Set the active DSA instance
+await dsa.setInstance(52) // Use DSA ID 52
+
+// Verify the instance
+console.log('Active DSA:', dsa.instance)
+// {
+//   id: 52,
+//   address: '0x...',
+//   version: 2,
+//   chainId: 1
+// }
+```
+
+<Note>
+  The configured account will be used for all subsequent spell casts.
+</Note>
+
+### Alternative: setAccount
+
+```javascript
+// setAccount is an alias for setInstance
+await dsa.setAccount(52)
+```
+
+## Getting Account Details
+
+Retrieve detailed information about a specific DSA:
+
+```javascript
+const accountDetails = await dsa.getAccountIdDetails(52)
+console.log(accountDetails)
+// {
+//   id: 52,
+//   address: '0x...',
+//   version: 2,
+//   chainId: 1
+// }
+```
+
+## Managing Authorities
+
+Get authorities for a specific DSA account:
+
+```javascript
+const authorities = await dsa.getAuthById(52)
+console.log('Authorities:', authorities)
+```
+
+Authorities are addresses that have permission to cast spells from the DSA account.
+
+## Complete Workflow Example
+
+<Steps>
+  <Step title="Check Existing Accounts">
+    ```javascript
+    // Get user's address
+    const accounts = await web3.eth.getAccounts()
+    const userAddress = accounts[0]
+
+    // Check if user has any DSA accounts
+    const dsaAccounts = await dsa.getAccounts(userAddress)
+    console.log(`Found ${dsaAccounts.length} DSA accounts`)
+    ```
+  </Step>
+
+  <Step title="Create or Select Account">
+    ```javascript
+    let dsaId
+
+    if (dsaAccounts.length === 0) {
+      // No DSA accounts, create one
+      console.log('Creating new DSA account...')
+      const txHash = await dsa.build()
+
+      // Wait for confirmation
+      await waitForTransaction(txHash)
+
+      // Get the new account
+      const updatedAccounts = await dsa.getAccounts(userAddress)
+      dsaId = updatedAccounts[updatedAccounts.length - 1].id
+      console.log('Created DSA ID:', dsaId)
+    } else {
+      // Use existing account
+      dsaId = dsaAccounts[0].id
+      console.log('Using existing DSA ID:', dsaId)
+    }
+    ```
+  </Step>
+
+  <Step title="Set Active Instance">
+    ```javascript
+    // Set the DSA instance for subsequent operations
+    await dsa.setInstance(dsaId)
+    console.log('Active DSA:', dsa.instance.address)
+    ```
+  </Step>
+
+  <Step title="Ready to Cast Spells">
+    ```javascript
+    // Now you can start casting spells
+    const spell = dsa.Spell()
+    // ... add spells and cast
+    ```
+  </Step>
+</Steps>
+
+## Version Differences
+
+### Version 1 (Legacy)
+- Original DSA implementation
+- Available on Ethereum Mainnet and Polygon
+- Fewer features and optimizations
+
+### Version 2 (Current)
+- Improved gas efficiency
+- Enhanced security features
+- Proxy pattern implementation
+- Available on all supported chains
+- **Recommended for all new accounts**
+
+<Warning>
+  Always use Version 2 for new accounts unless you have a specific reason to use Version 1.
+</Warning>
+
+## Building Transaction Objects
+
+For advanced use cases, you can build transaction objects without executing them:
+
+```javascript
+const txConfig = await dsa.buildTransactionConfig({
+  authority: '0x...',
+  origin: '0x...',
+  from: '0x...',
+  gasPrice: '50000000000',
+  gas: 500000
+})
+
+console.log('Transaction config:', txConfig)
+// Use this with custom transaction logic
+```
+
+## Error Handling
+
+<CodeGroup>
+```javascript Check if DSA Exists
+try {
+  await dsa.setInstance(999)
+} catch (error) {
+  if (error.message.includes('does not exist')) {
+    console.log('DSA ID does not exist')
+    // Create a new one
+    await dsa.build()
+  }
+}
+```
+
+```javascript Validate Before Building
+const count = await dsa.count(userAddress)
+if (count >= 10) {
+  console.log('User already has many DSA accounts')
+  // Use existing one instead
+}
+```
+</CodeGroup>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Version 2 for New Accounts">
+    Always create new accounts with Version 2 for better gas efficiency and security.
+
+    ```javascript
+    await dsa.build({ version: 2 }) // Default
+    ```
+  </Accordion>
+
+  <Accordion title="Set Origin for Analytics">
+    Always set an origin address to track transaction sources:
+
+    ```javascript
+    dsa.setOrigin('0xYourDappAddress')
+    await dsa.build()
+    ```
+  </Accordion>
+
+  <Accordion title="Reuse Existing Accounts">
+    Check for existing accounts before creating new ones to avoid unnecessary accounts:
+
+    ```javascript
+    const accounts = await dsa.getAccounts(userAddress)
+    if (accounts.length > 0) {
+      await dsa.setInstance(accounts[0].id)
+    } else {
+      await dsa.build()
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Handle Multiple Accounts">
+    For users with multiple accounts, let them choose which one to use:
+
+    ```javascript
+    const accounts = await dsa.getAccounts(userAddress)
+    // Display accounts to user and let them select
+    const selectedId = await userSelectAccount(accounts)
+    await dsa.setInstance(selectedId)
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Casting Spells" icon="wand-magic-sparkles" href="/guides/casting-spells">
+    Learn how to compose and execute DeFi transactions
+  </Card>
+  <Card title="Multi-Chain Operations" icon="link" href="/guides/multi-chain">
+    Use DSA across different blockchain networks
+  </Card>
+</CardGroup>

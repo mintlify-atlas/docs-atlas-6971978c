@@ -1,0 +1,617 @@
+---
+title: "Casting Spells"
+description: "Advanced guide for composing complex multi-protocol DeFi transactions"
+---
+
+Spells are sequences of connector functions that achieve a specific DeFi use case. With DSA Connect, you can compose complex transactions across multiple protocols in a single atomic transaction.
+
+## What are Spells?
+
+Spells allow you to:
+- Combine multiple DeFi operations in one transaction
+- Execute complex strategies atomically
+- Save gas by batching operations
+- Ensure all-or-nothing execution (transaction reverts if any step fails)
+
+## Basic Spell Structure
+
+<Steps>
+  <Step title="Create Spell Instance">
+    ```javascript
+    const spell = dsa.Spell()
+    ```
+  </Step>
+
+  <Step title="Add Operations">
+    ```javascript
+    spell.add({
+      connector: 'connector-name',
+      method: 'methodName',
+      args: [arg1, arg2, ...]
+    })
+    ```
+  </Step>
+
+  <Step title="Cast the Spell">
+    ```javascript
+    const txHash = await spell.cast()
+    console.log('Transaction Hash:', txHash)
+    ```
+  </Step>
+</Steps>
+
+## Spell Components
+
+Each spell consists of three parts:
+
+| Component | Description | Example |
+|-----------|-------------|----------|
+| `connector` | The protocol connector to use | `'aave'`, `'compound'`, `'uniswap'` |
+| `method` | The specific function to call | `'deposit'`, `'borrow'`, `'swap'` |
+| `args` | Array of arguments for the method | `['0x...', '1000000000000000000', 0, 0]` |
+
+## Simple Examples
+
+### Deposit ETH to Aave
+
+```javascript
+const spell = dsa.Spell()
+
+spell.add({
+  connector: 'aave',
+  method: 'deposit',
+  args: [
+    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', // ETH address
+    '1000000000000000000', // 1 ETH (10^18 wei)
+    0, // Get ID (0 for new)
+    0  // Set ID (0 for new)
+  ]
+})
+
+const txHash = await spell.cast()
+```
+
+### Borrow DAI from Aave
+
+```javascript
+const spell = dsa.Spell()
+
+spell.add({
+  connector: 'aave',
+  method: 'borrow',
+  args: [
+    '0x6B175474E89094C44Da98b954EedeAC495271d0F', // DAI address
+    '100000000000000000000', // 100 DAI (100 * 10^18 wei)
+    0, // Get ID
+    0  // Set ID
+  ]
+})
+
+const txHash = await spell.cast()
+```
+
+## Complex Multi-Protocol Strategy
+
+### Deposit, Borrow, and Reinvest
+
+This example demonstrates a complete DeFi strategy in one transaction:
+
+```javascript
+const spell = dsa.Spell()
+
+// Step 1: Deposit 1 ETH to Aave
+spell.add({
+  connector: 'aave',
+  method: 'deposit',
+  args: [
+    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+    '1000000000000000000', // 1 ETH
+    0,
+    0
+  ]
+})
+
+// Step 2: Borrow 100 DAI from Aave
+spell.add({
+  connector: 'aave',
+  method: 'borrow',
+  args: [
+    '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+    '100000000000000000000', // 100 DAI
+    0,
+    0
+  ]
+})
+
+// Step 3: Deposit borrowed DAI to Compound
+spell.add({
+  connector: 'compound',
+  method: 'deposit',
+  args: [
+    '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+    '100000000000000000000', // 100 DAI
+    0,
+    0
+  ]
+})
+
+// Execute all operations atomically
+const txHash = await spell.cast()
+```
+
+<Note>
+  All three operations execute in a single transaction. If any step fails, the entire transaction reverts.
+</Note>
+
+## Advanced Patterns
+
+### Leveraged Position
+
+Create a leveraged position by depositing, borrowing, and redepositing:
+
+```javascript
+const spell = dsa.Spell()
+
+// Deposit 1 ETH as collateral
+spell.add({
+  connector: 'aave',
+  method: 'deposit',
+  args: [
+    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+    '1000000000000000000',
+    0,
+    0
+  ]
+})
+
+// Borrow 0.5 ETH against collateral
+spell.add({
+  connector: 'aave',
+  method: 'borrow',
+  args: [
+    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+    '500000000000000000', // 0.5 ETH
+    0,
+    0
+  ]
+})
+
+// Redeposit borrowed ETH as additional collateral
+spell.add({
+  connector: 'aave',
+  method: 'deposit',
+  args: [
+    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+    '500000000000000000', // 0.5 ETH
+    0,
+    0
+  ]
+})
+
+await spell.cast()
+```
+
+### Cross-Protocol Arbitrage
+
+```javascript
+const spell = dsa.Spell()
+
+// Flashloan from Aave
+spell.add({
+  connector: 'aave',
+  method: 'flashBorrow',
+  args: [
+    '0x6B175474E89094C44Da98b954EedeAC495271d0F', // DAI
+    '10000000000000000000000', // 10,000 DAI
+    0,
+    0
+  ]
+})
+
+// Swap on Uniswap
+spell.add({
+  connector: 'uniswap',
+  method: 'swap',
+  args: [
+    '0x6B175474E89094C44Da98b954EedeAC495271d0F', // DAI
+    '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
+    '10000000000000000000000',
+    0,
+    0
+  ]
+})
+
+// Swap back on different DEX
+spell.add({
+  connector: 'sushiswap',
+  method: 'swap',
+  args: [
+    '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
+    '0x6B175474E89094C44Da98b954EedeAC495271d0F', // DAI
+    dsa.maxValue, // All WETH
+    0,
+    0
+  ]
+})
+
+// Repay flashloan
+spell.add({
+  connector: 'aave',
+  method: 'flashPayback',
+  args: [
+    '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+    dsa.maxValue, // Repay all
+    0,
+    0
+  ]
+})
+
+await spell.cast()
+```
+
+## Cast Options
+
+The `cast()` method accepts optional parameters:
+
+```javascript
+await spell.cast({
+  from: '0x...', // Sender address (optional)
+  value: '1000000000000000000', // ETH to send with transaction (in wei)
+  gasPrice: '50000000000', // Gas price (optional in browser mode)
+  maxFeePerGas: '100000000000', // EIP-1559 max fee
+  maxPriorityFeePerGas: '2000000000', // EIP-1559 priority fee
+  gas: 500000, // Gas limit
+  nonce: 10, // Transaction nonce
+  onReceipt: (receipt) => {
+    console.log('Transaction confirmed:', receipt)
+  },
+  onConfirmation: (confirmationNumber, receipt) => {
+    console.log('Confirmation:', confirmationNumber)
+  }
+})
+```
+
+### Sending ETH with Spells
+
+```javascript
+const spell = dsa.Spell()
+
+spell.add({
+  connector: 'aave',
+  method: 'deposit',
+  args: [
+    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+    '1000000000000000000',
+    0,
+    0
+  ]
+})
+
+// Send 1 ETH along with the transaction
+await spell.cast({
+  value: '1000000000000000000' // 1 ETH in wei
+})
+```
+
+### Transaction Callbacks
+
+```javascript
+await spell.cast({
+  onReceipt: (receipt) => {
+    console.log('Transaction mined in block:', receipt.blockNumber)
+    console.log('Gas used:', receipt.gasUsed)
+  },
+  onConfirmation: (confirmationNumber, receipt) => {
+    console.log(`${confirmationNumber} confirmations`)
+    if (confirmationNumber === 3) {
+      console.log('Transaction is safe!')
+    }
+  }
+})
+```
+
+## Gas Estimation
+
+Estimate gas before casting:
+
+```javascript
+const spell = dsa.Spell()
+
+spell.add({
+  connector: 'aave',
+  method: 'deposit',
+  args: [
+    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+    '1000000000000000000',
+    0,
+    0
+  ]
+})
+
+// Estimate gas
+const estimatedGas = await spell.estimateCastGas({
+  from: '0x...'
+})
+
+console.log('Estimated gas:', estimatedGas)
+
+// Cast with estimated gas + buffer
+await spell.cast({
+  gas: estimatedGas * 1.2 // 20% buffer
+})
+```
+
+## Encoding Spells
+
+### Encode Cast ABI
+
+Get the encoded ABI data for the cast operation:
+
+```javascript
+const spell = dsa.Spell()
+
+spell.add({
+  connector: 'aave',
+  method: 'deposit',
+  args: ['0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', '1000000000000000000', 0, 0]
+})
+
+const encodedABI = await spell.encodeCastABI()
+console.log('Encoded ABI:', encodedABI)
+```
+
+### Encode Spells Data
+
+Get the encoded spell data:
+
+```javascript
+const encodedSpells = await spell.encodeSpells()
+console.log('Targets:', encodedSpells.targets)
+console.log('Spells:', encodedSpells.spells)
+```
+
+## Using Max Value
+
+Use all available balance with `dsa.maxValue`:
+
+```javascript
+const spell = dsa.Spell()
+
+// Withdraw all deposited ETH
+spell.add({
+  connector: 'aave',
+  method: 'withdraw',
+  args: [
+    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+    dsa.maxValue, // Withdraw everything
+    0,
+    0
+  ]
+})
+
+await spell.cast()
+```
+
+<Note>
+  `dsa.maxValue` is equivalent to `uint256(-1)` or `2^256 - 1`, representing the maximum possible value.
+</Note>
+
+## Casting with Data
+
+For advanced use cases, you can cast using raw calldata:
+
+```javascript
+// Get encoded calldata from somewhere
+const castData = '0x...'
+
+// Cast using raw data
+await dsa.castData(castData)
+
+// Or with options
+await dsa.castData({
+  castData: castData,
+  from: '0x...',
+  value: '1000000000000000000',
+  gas: 500000
+})
+```
+
+## Error Handling
+
+<CodeGroup>
+```javascript Check Spell Data
+const spell = dsa.Spell()
+
+if (spell.data.length === 0) {
+  console.log('No spells added yet')
+} else {
+  console.log(`${spell.data.length} spells added`)
+  await spell.cast()
+}
+```
+
+```javascript Try-Catch Pattern
+try {
+  const spell = dsa.Spell()
+
+  spell.add({
+    connector: 'aave',
+    method: 'deposit',
+    args: ['0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', '1000000000000000000', 0, 0]
+  })
+
+  const txHash = await spell.cast()
+  console.log('Success:', txHash)
+} catch (error) {
+  console.error('Spell cast failed:', error.message)
+  // Handle error (e.g., insufficient funds, approval needed, etc.)
+}
+```
+
+```javascript Validate Before Cast
+const spell = dsa.Spell()
+
+spell.add({
+  connector: 'aave',
+  method: 'deposit',
+  args: ['0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', '1000000000000000000', 0, 0]
+})
+
+// Estimate gas to validate
+try {
+  const estimatedGas = await spell.estimateCastGas()
+  console.log('Gas estimate:', estimatedGas)
+
+  // Proceed with cast
+  await spell.cast({ gas: estimatedGas * 1.2 })
+} catch (error) {
+  console.error('Transaction will fail:', error.message)
+  // Don't proceed with cast
+}
+```
+</CodeGroup>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Always Check DSA Balance">
+    Ensure your DSA has sufficient balance before casting:
+
+    ```javascript
+    const balance = await web3.eth.getBalance(dsa.instance.address)
+    console.log('DSA Balance:', web3.utils.fromWei(balance, 'ether'), 'ETH')
+
+    if (balance < requiredAmount) {
+      // Transfer funds to DSA first
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Use Gas Estimation">
+    Always estimate gas before executing complex spells:
+
+    ```javascript
+    const estimatedGas = await spell.estimateCastGas()
+    await spell.cast({ gas: Math.ceil(estimatedGas * 1.2) })
+    ```
+  </Accordion>
+
+  <Accordion title="Handle Callbacks Properly">
+    Use callbacks for better UX:
+
+    ```javascript
+    await spell.cast({
+      onReceipt: (receipt) => {
+        // Update UI
+        showSuccessMessage('Transaction confirmed!')
+      },
+      onConfirmation: (num) => {
+        // Show confirmation progress
+        updateProgress(num)
+      }
+    })
+    ```
+  </Accordion>
+
+  <Accordion title="Use maxValue Wisely">
+    `maxValue` is useful for withdrawals and repayments but verify you want to use the entire balance:
+
+    ```javascript
+    // Good: Repaying all debt
+    spell.add({
+      connector: 'aave',
+      method: 'payback',
+      args: ['0x...', dsa.maxValue, 0, 0]
+    })
+
+    // Be careful: This withdraws ALL
+    spell.add({
+      connector: 'aave',
+      method: 'withdraw',
+      args: ['0x...', dsa.maxValue, 0, 0]
+    })
+    ```
+  </Accordion>
+
+  <Accordion title="Atomic Operations">
+    Leverage atomicity for safer complex operations:
+
+    ```javascript
+    // All or nothing - perfect for rebalancing
+    spell.add({ /* withdraw from protocol A */ })
+    spell.add({ /* deposit to protocol B */ })
+    // If protocol B fails, withdrawal is also reverted
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Real-World Examples
+
+### Collateral Swap
+
+```javascript
+const spell = dsa.Spell()
+
+// Withdraw ETH collateral
+spell.add({
+  connector: 'aave',
+  method: 'withdraw',
+  args: ['0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', '1000000000000000000', 0, 0]
+})
+
+// Swap ETH for USDC
+spell.add({
+  connector: 'uniswap',
+  method: 'swap',
+  args: ['0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', '1000000000000000000', 0, 0]
+})
+
+// Deposit USDC as new collateral
+spell.add({
+  connector: 'aave',
+  method: 'deposit',
+  args: ['0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', dsa.maxValue, 0, 0]
+})
+
+await spell.cast()
+```
+
+### Debt Repayment
+
+```javascript
+const spell = dsa.Spell()
+
+// Withdraw collateral to cover debt
+spell.add({
+  connector: 'compound',
+  method: 'withdraw',
+  args: ['0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', '2000000000000000000', 0, 0] // 2 WETH
+})
+
+// Swap WETH for DAI
+spell.add({
+  connector: 'uniswap',
+  method: 'swap',
+  args: ['0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', '0x6B175474E89094C44Da98b954EedeAC495271d0F', '2000000000000000000', 0, 0]
+})
+
+// Repay DAI debt
+spell.add({
+  connector: 'aave',
+  method: 'payback',
+  args: ['0x6B175474E89094C44Da98b954EedeAC495271d0F', dsa.maxValue, 0, 0]
+})
+
+await spell.cast()
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Multi-Chain Guide" icon="link" href="/guides/multi-chain">
+    Use DSA across different blockchain networks
+  </Card>
+  <Card title="Connectors Reference" icon="plug" href="/concepts/connectors">
+    Explore available protocol connectors
+  </Card>
+</CardGroup>

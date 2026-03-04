@@ -1,0 +1,383 @@
+---
+title: 'cast()'
+description: 'Execute the spell sequence as a blockchain transaction'
+---
+
+## Overview
+
+The `cast()` method executes the spell sequence that has been built using `add()`. It submits the transaction to the blockchain, executing all spells atomically in a single transaction.
+
+## Syntax
+
+```js
+await spells.cast()
+
+// With optional parameters
+await spells.cast(params)
+```
+
+## Parameters
+
+<ParamField path="params" type="object" optional>
+  Optional parameters to configure the transaction
+  
+  <Expandable title="properties">
+    <ParamField path="from" type="string">
+      The address to send the transaction from. Defaults to the connected wallet address.
+    </ParamField>
+    
+    <ParamField path="to" type="string">
+      The DSA address to cast spells to. Defaults to the current DSA instance address.
+    </ParamField>
+    
+    <ParamField path="value" type="string | number">
+      Amount of ETH to send along with the transaction in wei (e.g., "1000000000000000000" for 1 ETH)
+    </ParamField>
+    
+    <ParamField path="gasPrice" type="string | number">
+      Gas price in wei. Mostly used in Node.js implementation to configure transaction confirmation speed.
+      
+      Example: `web3.utils.toWei('50', 'gwei')`
+    </ParamField>
+    
+    <ParamField path="maxFeePerGas" type="string | number">
+      Maximum fee per gas for EIP-1559 transactions (in wei)
+    </ParamField>
+    
+    <ParamField path="maxPriorityFeePerGas" type="string | number">
+      Maximum priority fee per gas for EIP-1559 transactions (in wei)
+    </ParamField>
+    
+    <ParamField path="gas" type="string | number">
+      Gas limit for the transaction. If not provided, it will be estimated automatically.
+    </ParamField>
+    
+    <ParamField path="nonce" type="string | number">
+      Transaction nonce. Mostly used in Node.js implementation to send transactions with a specific nonce.
+    </ParamField>
+    
+    <ParamField path="origin" type="string">
+      Origin address for tracking and analytics. Used for affiliates and on-chain analytics.
+    </ParamField>
+    
+    <ParamField path="onReceipt" type="function">
+      Callback function called when the transaction receipt is received
+      
+      ```js
+      onReceipt: (receipt) => {
+        console.log('Transaction confirmed:', receipt)
+      }
+      ```
+    </ParamField>
+    
+    <ParamField path="onConfirmation" type="function">
+      Callback function called on each block confirmation
+      
+      ```js
+      onConfirmation: (confirmationNumber, receipt) => {
+        console.log(`Confirmation ${confirmationNumber}:`, receipt)
+      }
+      ```
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Returns
+
+<ResponseField name="transaction" type="object">
+  Transaction object containing the transaction hash and receipt
+  
+  <Expandable title="properties">
+    <ResponseField name="hash" type="string">
+      The transaction hash
+    </ResponseField>
+    
+    <ResponseField name="receipt" type="object">
+      The transaction receipt (after confirmation)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Examples
+
+### Basic Cast
+
+Execute spells with default parameters:
+
+```js
+const spells = dsa.Spell()
+
+spells.add({
+  connector: "aave",
+  method: "deposit",
+  args: [
+    "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "1000000000000000000", // 1 ETH
+    0,
+    0
+  ]
+})
+
+const txHash = await spells.cast()
+console.log('Transaction hash:', txHash)
+```
+
+### Cast with ETH Value
+
+Send ETH along with the transaction:
+
+```js
+const spells = dsa.Spell()
+
+spells.add({
+  connector: "aave",
+  method: "deposit",
+  args: [
+    "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "1000000000000000000",
+    0,
+    0
+  ]
+})
+
+await spells.cast({
+  value: "1000000000000000000" // Send 1 ETH with transaction
+})
+```
+
+### Cast with Gas Configuration
+
+Configure gas price for faster confirmation (Node.js):
+
+```js
+const spells = dsa.Spell()
+
+spells
+  .add({
+    connector: "aave",
+    method: "deposit",
+    args: [
+      "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "1000000000000000000",
+      0,
+      0
+    ]
+  })
+  .add({
+    connector: "aave",
+    method: "borrow",
+    args: [
+      "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+      "100000000000000000000",
+      0,
+      0
+    ]
+  })
+
+await spells.cast({
+  gasPrice: web3.utils.toWei('50', 'gwei'),
+  nonce: 42
+})
+```
+
+### Cast with EIP-1559 Gas
+
+Use EIP-1559 transaction format:
+
+```js
+await spells.cast({
+  maxFeePerGas: web3.utils.toWei('100', 'gwei'),
+  maxPriorityFeePerGas: web3.utils.toWei('2', 'gwei')
+})
+```
+
+### Cast with Callbacks
+
+Monitor transaction confirmation:
+
+```js
+await spells.cast({
+  onReceipt: (receipt) => {
+    console.log('Transaction confirmed!')
+    console.log('Gas used:', receipt.gasUsed)
+  },
+  onConfirmation: (confirmationNumber, receipt) => {
+    console.log(`Confirmation ${confirmationNumber}`)
+    if (confirmationNumber === 3) {
+      console.log('Transaction is highly secure now')
+    }
+  }
+})
+```
+
+### Multi-Protocol Complex Transaction
+
+```js
+const spells = dsa.Spell()
+
+// Deposit 1 ETH to Aave
+spells.add({
+  connector: "aave",
+  method: "deposit",
+  args: [
+    "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "1000000000000000000", // 1 ETH
+    0,
+    0
+  ]
+})
+
+// Borrow 100 DAI from Aave
+spells.add({
+  connector: "aave",
+  method: "borrow",
+  args: [
+    "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    "100000000000000000000", // 100 DAI
+    0,
+    0
+  ]
+})
+
+// Deposit borrowed DAI to Compound
+spells.add({
+  connector: "compound",
+  method: "deposit",
+  args: [
+    "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    "100000000000000000000", // 100 DAI
+    0,
+    0
+  ]
+})
+
+// Execute with gas configuration and callbacks
+const tx = await spells.cast({
+  gasPrice: web3.utils.toWei('50', 'gwei'),
+  value: "1000000000000000000",
+  onReceipt: (receipt) => {
+    console.log('All operations completed successfully!')
+    console.log('Transaction hash:', receipt.transactionHash)
+  }
+})
+```
+
+## Behavior
+
+### Empty Spell Sequence
+
+If no spells have been added, `cast()` will log a message and return without executing:
+
+```js
+const spells = dsa.Spell()
+await spells.cast()
+// Logs: "No spells casted. Add spells with `.add(...)`."
+```
+
+### Atomic Execution
+
+All spells in the sequence execute atomically. If any spell fails, the entire transaction reverts:
+
+```js
+spells
+  .add({ /* spell 1 - succeeds */ })
+  .add({ /* spell 2 - fails */ })
+  .add({ /* spell 3 - never executes */ })
+
+// Transaction reverts, no state changes occur
+```
+
+### Console Output
+
+The `cast()` method logs configuration information:
+
+```
+DSA config:
+ version: 2
+ chainId: 1
+Casting spells to DSA(#52)...
+```
+
+## Error Handling
+
+```js
+try {
+  const spells = dsa.Spell()
+  
+  spells
+    .add({
+      connector: "aave",
+      method: "deposit",
+      args: [
+        "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "1000000000000000000",
+        0,
+        0
+      ]
+    })
+  
+  const tx = await spells.cast()
+  console.log('Success:', tx)
+  
+} catch (error) {
+  if (error.message.includes('insufficient funds')) {
+    console.error('Not enough balance in DSA')
+  } else if (error.message.includes('gas')) {
+    console.error('Gas estimation failed')
+  } else {
+    console.error('Transaction failed:', error)
+  }
+}
+```
+
+## Node.js vs Browser
+
+### Browser Mode
+
+In browser mode, `cast()` triggers the user's Web3 wallet (like MetaMask) to confirm the transaction:
+
+```js
+// Browser - prompts user confirmation
+const dsa = new DSA(web3)
+await spells.cast()
+```
+
+### Node.js Mode
+
+In Node.js mode, transactions are automatically signed with the provided private key:
+
+```js
+// Node.js - automatically signs and sends
+const dsa = new DSA({
+  web3: web3,
+  mode: "node",
+  privateKey: PRIVATE_KEY
+})
+
+await spells.cast({
+  gasPrice: web3.utils.toWei('50', 'gwei'),
+  gas: 500000,
+  nonce: 42
+})
+```
+
+## Best Practices
+
+1. **Check Balances First**: Ensure your DSA has sufficient balance before casting
+2. **Estimate Gas**: Use `estimateCastGas()` before casting to verify gas requirements
+3. **Handle Errors**: Always wrap `cast()` in try-catch blocks
+4. **Monitor Confirmations**: Use callbacks to track transaction status
+5. **Set Appropriate Gas**: In Node.js mode, always specify gas price and limit
+6. **Test First**: Test spell sequences on testnets before mainnet
+
+## Related Methods
+
+- **estimateCastGas()**: Estimate gas before casting
+- **encodeCastABI()**: Get transaction calldata without executing
+- **encodeSpells()**: Get encoded spell data
+
+## See Also
+
+- [Spell Class](/api/spells/spell-class) - Complete Spell class documentation
+- [add()](/api/spells/add) - Add spells to the sequence
+- [setInstance()](/api/accounts/set-instance) - Set the DSA instance to cast to

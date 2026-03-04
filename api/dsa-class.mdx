@@ -1,0 +1,537 @@
+---
+title: 'DSA Class'
+description: 'Main class for interacting with DeFi Smart Accounts'
+---
+
+## Overview
+
+The `DSA` class is the main entry point for interacting with Instadapp's DeFi Smart Accounts (DSA). It provides methods for building DSAs, casting spells, and managing account instances.
+
+## Constructor
+
+<ParamField path="config" type="Web3 | DSAConfig" required>
+  A Web3 instance or DSAConfig object. See [Configuration](/api/configuration) for details.
+</ParamField>
+
+<ParamField path="chainId" type="ChainId" default="1">
+  The blockchain network ID. Supported chains: 1 (Ethereum), 137 (Polygon), 42161 (Arbitrum), 43114 (Avalanche), 10 (Optimism), 250 (Fantom), 8453 (Base), 9745 (Plasma), 56 (BSC)
+</ParamField>
+
+<ParamField path="options" type="Options" default="{ skipChainIdValidation: false }">
+  Configuration options for the DSA instance
+  <ParamField path="options.skipChainIdValidation" type="boolean" default="false">
+    Skip chain ID validation against the Web3 provider
+  </ParamField>
+</ParamField>
+
+```typescript
+import DSA from 'dsa-connect'
+import Web3 from 'web3'
+
+const web3 = new Web3(window.ethereum)
+const dsa = new DSA(web3, 1)
+```
+
+## Properties
+
+### Static Properties
+
+<ResponseField name="DSA.version" type="string">
+  The current version of the DSA SDK
+</ResponseField>
+
+### Instance Properties
+
+<ResponseField name="config" type="DSAConfig">
+  The configuration object used to initialize the DSA instance
+</ResponseField>
+
+<ResponseField name="web3" type="Web3">
+  The Web3 instance used for blockchain interactions
+</ResponseField>
+
+<ResponseField name="mode" type="'browser' | 'node' | 'simulation'">
+  The current operation mode
+</ResponseField>
+
+<ResponseField name="origin" type="string">
+  The origin address for affiliation and on-chain analytics. Defaults to genesis address.
+</ResponseField>
+
+<ResponseField name="instance" type="Instance">
+  The current DSA instance details. See [Instance](/api/instance) for structure.
+</ResponseField>
+
+<ResponseField name="maxValue" type="string">
+  Maximum uint256 value: `115792089237316195423570985008687907853269984665640564039457584007913129639935`
+</ResponseField>
+
+### Extension Properties
+
+<ResponseField name="erc20" type="Erc20">
+  ERC20 token utility methods
+</ResponseField>
+
+<ResponseField name="erc20Euler" type="Erc20Euler">
+  ERC20 Euler-specific token utility methods
+</ResponseField>
+
+<ResponseField name="erc721" type="Erc721">
+  ERC721 NFT utility methods
+</ResponseField>
+
+<ResponseField name="internal" type="Internal">
+  Internal utility methods for encoding and transaction management
+</ResponseField>
+
+<ResponseField name="castHelpers" type="CastHelpers">
+  Helper methods for spell casting operations
+</ResponseField>
+
+<ResponseField name="transaction" type="Transaction">
+  Transaction management methods
+</ResponseField>
+
+<ResponseField name="instapool_v2" type="Instapool_v2">
+  Instapool V2 resolver methods
+</ResponseField>
+
+<ResponseField name="avocado" type="Avocado">
+  Avocado wallet integration methods
+</ResponseField>
+
+<ResponseField name="accounts" type="Accounts">
+  DSA account management methods
+</ResponseField>
+
+## Core Methods
+
+### setOrigin()
+
+Sets the origin address for affiliation and on-chain analytics.
+
+<ParamField path="origin" type="string" required>
+  The origin address to set
+</ParamField>
+
+```typescript
+dsa.setOrigin('0x...')
+```
+
+### setInstance()
+
+Sets the current DSA instance by ID.
+
+<ParamField path="id" type="number" required>
+  The DSA ID to set as the current instance
+</ParamField>
+
+<ResponseField name="returns" type="Promise<Instance>">
+  The instance details including id, address, version, and chainId
+</ResponseField>
+
+```typescript
+const instance = await dsa.setInstance(123)
+console.log(instance.address) // DSA address
+```
+
+### setAccount()
+
+Alias for `setInstance()`. Sets the current DSA ID instance.
+
+<ParamField path="id" type="number" required>
+  DSA ID
+</ParamField>
+
+<ResponseField name="returns" type="Promise<Instance>">
+  The instance details
+</ResponseField>
+
+```typescript
+await dsa.setAccount(123)
+```
+
+### getAccountIdDetails()
+
+Retrieves details for a specific DSA instance ID.
+
+<ParamField path="instanceId" type="number" required>
+  The DSA instance ID to query
+</ParamField>
+
+<ResponseField name="returns" type="Promise<Instance>">
+  Object containing id, address, version, and chainId
+</ResponseField>
+
+```typescript
+const details = await dsa.getAccountIdDetails(123)
+```
+
+### refreshChainId()
+
+Refreshes the chain ID from the Web3 provider and updates the instance.
+
+<ResponseField name="returns" type="Promise<void>">
+  Completes when chain ID is updated
+</ResponseField>
+
+```typescript
+await dsa.refreshChainId()
+```
+
+## Building DSA Accounts
+
+### build()
+
+Builds a new DSA account and executes the transaction.
+
+<ParamField path="params" type="BuildParams" required>
+  Build parameters
+  <ParamField path="params.authority" type="string">
+    Authority address for the DSA. Defaults to current address.
+  </ParamField>
+  <ParamField path="params.origin" type="string">
+    Origin address for analytics. Defaults to genesis address.
+  </ParamField>
+  <ParamField path="params.version" type="number">
+    DSA version. Defaults to 2.
+  </ParamField>
+  <ParamField path="params.from" type="string">
+    Transaction sender address
+  </ParamField>
+  <ParamField path="params.gas" type="number | string">
+    Gas limit for the transaction
+  </ParamField>
+  <ParamField path="params.gasPrice" type="number | string">
+    Gas price (required in node mode)
+  </ParamField>
+  <ParamField path="params.maxFeePerGas" type="number | string">
+    Maximum fee per gas (EIP-1559)
+  </ParamField>
+  <ParamField path="params.maxPriorityFeePerGas" type="number | string">
+    Maximum priority fee per gas (EIP-1559)
+  </ParamField>
+  <ParamField path="params.nonce" type="number | string">
+    Transaction nonce
+  </ParamField>
+  <ParamField path="params.onReceipt" type="(receipt: TransactionReceipt) => void">
+    Callback executed when transaction receipt is received
+  </ParamField>
+  <ParamField path="params.onConfirmation" type="(confirmationNumber: number, receipt: TransactionReceipt, latestBlockHash?: string) => void">
+    Callback executed on each confirmation
+  </ParamField>
+</ParamField>
+
+<ResponseField name="returns" type="Promise<string>">
+  Transaction hash
+</ResponseField>
+
+```typescript
+const txHash = await dsa.build({
+  authority: '0x...', // Your address
+  version: 2,
+  gasPrice: web3.utils.toWei('50', 'gwei')
+})
+```
+
+### buildTxObj()
+
+Builds a new DSA transaction object without sending it.
+
+<ParamField path="params" type="BuildParams" required>
+  Build parameters (authority and from are required)
+</ParamField>
+
+<ResponseField name="returns" type="Promise<TransactionConfig>">
+  Transaction configuration object that can be signed and sent manually
+</ResponseField>
+
+```typescript
+const txObj = await dsa.buildTxObj({
+  authority: '0x...',
+  from: '0x...',
+  version: 2
+})
+```
+
+### buildTransactionConfig()
+
+Builds a transaction configuration for creating a new DSA.
+
+<ParamField path="params" type="object" required>
+  Configuration parameters
+  <ParamField path="params.authority" type="string">
+    Authority address
+  </ParamField>
+  <ParamField path="params.origin" type="string">
+    Origin address
+  </ParamField>
+  <ParamField path="params.from" type="string" required>
+    Sender address
+  </ParamField>
+  <ParamField path="params.gasPrice" type="number | string">
+    Gas price
+  </ParamField>
+  <ParamField path="params.maxFeePerGas" type="number | string">
+    Maximum fee per gas
+  </ParamField>
+  <ParamField path="params.maxPriorityFeePerGas" type="number | string">
+    Maximum priority fee per gas
+  </ParamField>
+  <ParamField path="params.gas" type="number | string">
+    Gas limit
+  </ParamField>
+  <ParamField path="params.nonce" type="number | string">
+    Transaction nonce
+  </ParamField>
+</ParamField>
+
+<ResponseField name="returns" type="Promise<TransactionConfig>">
+  Transaction configuration
+</ResponseField>
+
+```typescript
+const config = await dsa.buildTransactionConfig({
+  from: '0x...'
+})
+```
+
+## Spell Casting
+
+### Spell()
+
+Creates a new Spells instance for building and executing DeFi operations.
+
+<ResponseField name="returns" type="Spells">
+  A Spells instance with fluent API for adding operations
+</ResponseField>
+
+The returned Spells instance includes these methods:
+- `add(spell)` - Add a spell to the sequence
+- `cast(params?)` - Execute all spells
+- `estimateCastGas(params?)` - Estimate gas for execution
+- `encodeCastABI(params?)` - Encode spells to ABI
+- `encodeSpells(params?)` - Encode spells data
+- `convertToAvocadoActions()` - Convert spells to Avocado actions
+
+```typescript
+const spells = dsa.Spell()
+  .add({
+    connector: 'compound',
+    method: 'deposit',
+    args: [tokenAddress, amount, 0, 0]
+  })
+  .add({
+    connector: 'compound',
+    method: 'borrow',
+    args: [tokenAddress, amount, 0, 0]
+  })
+
+const txHash = await spells.cast()
+```
+
+### cast()
+
+Executes spells on the current DSA instance.
+
+<ParamField path="params" type="Spells | CastParams" required>
+  Either a Spells instance or CastParams object
+  <ParamField path="params.spells" type="Spells">
+    The Spells instance to cast
+  </ParamField>
+  <ParamField path="params.origin" type="string">
+    Origin address
+  </ParamField>
+  <ParamField path="params.to" type="string">
+    Target DSA address. Defaults to current instance.
+  </ParamField>
+  <ParamField path="params.from" type="string">
+    Sender address
+  </ParamField>
+  <ParamField path="params.value" type="number | string">
+    ETH value to send with transaction
+  </ParamField>
+  <ParamField path="params.gas" type="number | string">
+    Gas limit
+  </ParamField>
+  <ParamField path="params.gasPrice" type="number | string">
+    Gas price
+  </ParamField>
+  <ParamField path="params.maxFeePerGas" type="number | string">
+    Maximum fee per gas
+  </ParamField>
+  <ParamField path="params.maxPriorityFeePerGas" type="number | string">
+    Maximum priority fee per gas
+  </ParamField>
+  <ParamField path="params.nonce" type="number | string">
+    Transaction nonce
+  </ParamField>
+  <ParamField path="params.onReceipt" type="(receipt: TransactionReceipt) => void">
+    Receipt callback
+  </ParamField>
+  <ParamField path="params.onConfirmation" type="(confirmationNumber: number, receipt: TransactionReceipt, latestBlockHash?: string) => void">
+    Confirmation callback
+  </ParamField>
+</ParamField>
+
+<ResponseField name="returns" type="Promise<string>">
+  Transaction hash
+</ResponseField>
+
+```typescript
+const txHash = await dsa.cast({
+  spells: mySpells,
+  from: '0x...'
+})
+```
+
+### castData()
+
+Executes pre-encoded cast data on the current DSA instance.
+
+<ParamField path="params" type="string | CastDataParams" required>
+  Either cast data string or CastDataParams object
+  <ParamField path="params.castData" type="string">
+    Pre-encoded cast calldata
+  </ParamField>
+  <ParamField path="params.origin" type="string">
+    Origin address
+  </ParamField>
+  <ParamField path="params.to" type="string">
+    Target DSA address
+  </ParamField>
+  <ParamField path="params.from" type="string">
+    Sender address
+  </ParamField>
+  <ParamField path="params.value" type="number | string">
+    ETH value
+  </ParamField>
+  <ParamField path="params.gas" type="number | string">
+    Gas limit
+  </ParamField>
+  <ParamField path="params.gasPrice" type="number | string">
+    Gas price
+  </ParamField>
+  <ParamField path="params.maxFeePerGas" type="number | string">
+    Maximum fee per gas
+  </ParamField>
+  <ParamField path="params.maxPriorityFeePerGas" type="number | string">
+    Maximum priority fee per gas
+  </ParamField>
+  <ParamField path="params.nonce" type="number | string">
+    Transaction nonce
+  </ParamField>
+  <ParamField path="params.onReceipt" type="(receipt: TransactionReceipt) => void">
+    Receipt callback
+  </ParamField>
+  <ParamField path="params.onConfirmation" type="(confirmationNumber: number, receipt: TransactionReceipt, latestBlockHash?: string) => void">
+    Confirmation callback
+  </ParamField>
+</ParamField>
+
+<ResponseField name="returns" type="Promise<string>">
+  Transaction hash
+</ResponseField>
+
+```typescript
+const txHash = await dsa.castData('0x...')
+```
+
+## Alias Methods
+
+### encodeSpells()
+
+Alias for `dsa.internal.encodeSpells()`. Encodes spells into targets and calldata arrays.
+
+### sendTransaction()
+
+Alias for `dsa.transaction.send()`. Sends a transaction.
+
+### count()
+
+Alias for `dsa.accounts.count()`. Returns the total number of DSA accounts.
+
+### getAccounts()
+
+Alias for `dsa.accounts.getAccounts()`. Retrieves DSA accounts for an address.
+
+### getAuthById()
+
+Alias for `dsa.accounts.getAuthoritiesById()`. Gets authorities for a DSA by ID.
+
+### encodeCastABI()
+
+Alias for `dsa.castHelpers.encodeABI()`. Encodes cast ABI.
+
+### estimateCastGas()
+
+Alias for `dsa.castHelpers.estimateGas()`. Estimates gas for casting spells.
+
+### convertToAvocadoActions()
+
+Alias for `dsa.avocado.convertToActions()`. Converts spells to Avocado wallet actions.
+
+### maxVal()
+
+Returns the maximum uint256 value as a string.
+
+<ResponseField name="returns" type="string">
+  Maximum uint256 value
+</ResponseField>
+
+```typescript
+const max = dsa.maxVal()
+// '115792089237316195423570985008687907853269984665640564039457584007913129639935'
+```
+
+## Usage Examples
+
+### Browser Mode
+
+```typescript
+import DSA from 'dsa-connect'
+import Web3 from 'web3'
+
+const web3 = new Web3(window.ethereum)
+const dsa = new DSA(web3, 1)
+
+await dsa.setInstance(123) // Set your DSA ID
+
+const spells = dsa.Spell()
+  .add({
+    connector: 'compound',
+    method: 'deposit',
+    args: [tokenAddress, amount, 0, 0]
+  })
+
+const txHash = await spells.cast()
+```
+
+### Node Mode
+
+```typescript
+import DSA from 'dsa-connect'
+import Web3 from 'web3'
+
+const web3 = new Web3('https://mainnet.infura.io/v3/YOUR_KEY')
+const dsa = new DSA({
+  web3,
+  mode: 'node',
+  privateKey: '0x...'
+}, 1)
+
+await dsa.setInstance(123)
+const txHash = await dsa.cast(mySpells)
+```
+
+### Simulation Mode
+
+```typescript
+const dsa = new DSA({
+  web3,
+  mode: 'simulation',
+  publicKey: '0x...'
+}, 1)
+
+const gasEstimate = await dsa.estimateCastGas({ spells: mySpells })
+```

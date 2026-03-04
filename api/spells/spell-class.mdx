@@ -1,0 +1,228 @@
+---
+title: 'Spell Class'
+description: 'Create and manage spell instances for executing DeFi transactions'
+---
+
+## Overview
+
+The Spell class is created using the `dsa.Spell()` method and provides a fluent interface for building and executing transaction sequences across DeFi protocols. Spells denote a sequence of connector functions that achieve a specific use case.
+
+## Creating a Spell Instance
+
+Create a spell instance to start building transaction sequences:
+
+```js
+const spells = dsa.Spell()
+```
+
+The `Spell()` method returns an extended `Spells` class instance with additional methods for casting and encoding transactions.
+
+## Available Methods
+
+The Spell instance provides the following methods:
+
+### add()
+
+Add a connector function to the spell sequence. Returns the spell instance for method chaining.
+
+[View detailed add() documentation](/api/spells/add)
+
+### cast()
+
+Execute the spell sequence as a transaction on the blockchain. Returns the transaction hash.
+
+[View detailed cast() documentation](/api/spells/cast)
+
+### estimateCastGas()
+
+Estimate the gas required to execute the spell sequence.
+
+```js
+const gasEstimate = await spells.estimateCastGas()
+```
+
+<ParamField path="params" type="object" optional>
+  Optional parameters for gas estimation
+  
+  <Expandable title="properties">
+    <ParamField path="from" type="string">
+      The address to estimate gas from
+    </ParamField>
+    
+    <ParamField path="to" type="string">
+      The DSA address to estimate gas for
+    </ParamField>
+    
+    <ParamField path="value" type="string | number">
+      Amount of ETH to send with transaction (in wei)
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="gasEstimate" type="string">
+  Estimated gas units required for the transaction
+</ResponseField>
+
+### encodeCastABI()
+
+Encode the spell sequence into transaction calldata without executing it.
+
+```js
+const encodedData = await spells.encodeCastABI()
+```
+
+<ParamField path="params" type="object" optional>
+  Optional parameters for ABI encoding
+  
+  <Expandable title="properties">
+    <ParamField path="origin" type="string">
+      Origin address for tracking and analytics
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="encodedData" type="string">
+  Hex-encoded transaction calldata
+</ResponseField>
+
+### encodeSpells()
+
+Encode the spell data into the internal format used by DSA contracts.
+
+```js
+const encodedSpells = await spells.encodeSpells()
+```
+
+<ResponseField name="encodedSpells" type="object">
+  Object containing targets and encoded spell data
+  
+  <Expandable title="properties">
+    <ResponseField name="targets" type="string[]">
+      Array of connector addresses
+    </ResponseField>
+    
+    <ResponseField name="spells" type="string[]">
+      Array of encoded spell data
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### convertToAvocadoActions()
+
+Convert the spell sequence to Avocado-compatible actions format.
+
+```js
+const avocadoActions = await spells.convertToAvocadoActions()
+```
+
+<ResponseField name="avocadoActions" type="array">
+  Array of actions in Avocado format
+</ResponseField>
+
+## Example Usage
+
+### Basic Spell Chain
+
+```js
+const spells = dsa.Spell()
+
+spells
+  .add({
+    connector: "aave",
+    method: "deposit",
+    args: [
+      "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "1000000000000000000", // 1 ETH
+      0,
+      0
+    ]
+  })
+  .add({
+    connector: "aave",
+    method: "borrow",
+    args: [
+      "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+      "100000000000000000000", // 100 DAI
+      0,
+      0
+    ]
+  })
+
+const txHash = await spells.cast()
+```
+
+### Complex Multi-Protocol Transaction
+
+```js
+const spells = dsa.Spell()
+
+// Deposit ETH to Aave
+spells.add({
+  connector: "aave",
+  method: "deposit",
+  args: [
+    "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "1000000000000000000",
+    0,
+    0
+  ]
+})
+
+// Borrow DAI from Aave
+spells.add({
+  connector: "aave",
+  method: "borrow",
+  args: [
+    "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    "100000000000000000000",
+    0,
+    0
+  ]
+})
+
+// Deposit borrowed DAI to Compound
+spells.add({
+  connector: "compound",
+  method: "deposit",
+  args: [
+    "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    "100000000000000000000",
+    0,
+    0
+  ]
+})
+
+// Execute the transaction
+const txHash = await spells.cast({
+  gasPrice: web3.utils.toWei('50', 'gwei'),
+  value: "1000000000000000000" // Send 1 ETH with transaction
+})
+```
+
+## Properties
+
+<ResponseField name="data" type="Spell[]">
+  Array of spell objects added to the instance
+  
+  <Expandable title="Spell object structure">
+    <ResponseField name="connector" type="string">
+      The connector name (e.g., "aave", "compound")
+    </ResponseField>
+    
+    <ResponseField name="method" type="string">
+      The method name to call on the connector
+    </ResponseField>
+    
+    <ResponseField name="args" type="any[]">
+      Array of arguments to pass to the method
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Notes
+
+- The Spell instance uses method chaining for a fluent API
+- All methods except `cast()` return the spell instance for chaining
+- Spells are not executed until `cast()` is called
+- The spell sequence is atomic - either all operations succeed or all fail
+- Make sure your DSA has sufficient balance before casting spells

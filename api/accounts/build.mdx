@@ -1,0 +1,172 @@
+---
+title: "build()"
+description: "Create a new DSA (DeFi Smart Account) instance"
+---
+
+## Description
+
+The `build()` method creates a new DSA (DeFi Smart Account) on the blockchain. This method deploys a new smart contract wallet that can interact with various DeFi protocols through the Instadapp ecosystem.
+
+## Syntax
+
+```typescript
+await dsa.build(params: BuildParams)
+```
+
+## Parameters
+
+<ParamField path="params" type="BuildParams" required>
+  Configuration object for building a new DSA account
+  
+  <Expandable title="BuildParams properties">
+    <ParamField path="authority" type="string" default="from address">
+      The ethereum address that will have authority over the DSA. Defaults to the `from` address if not specified.
+    </ParamField>
+    
+    <ParamField path="origin" type="string" default="0x0000000000000000000000000000000000000000">
+      The origin address for affiliation and on-chain analytics. Used to track which application or service initiated the DSA creation.
+    </ParamField>
+    
+    <ParamField path="version" type="number" default="2">
+      The version of the DSA to create. Version 2 is the latest and recommended version.
+    </ParamField>
+    
+    <ParamField path="from" type="string" default="connected wallet address">
+      The ethereum address that will send the transaction. Defaults to the currently connected wallet address.
+    </ParamField>
+    
+    <ParamField path="gas" type="number | string">
+      Gas limit for the transaction. Optional in browser mode, required in node mode.
+    </ParamField>
+    
+    <ParamField path="gasPrice" type="number | string">
+      Gas price for the transaction in wei. Optional in browser mode, required in node mode.
+    </ParamField>
+    
+    <ParamField path="maxFeePerGas" type="number | string">
+      Maximum fee per gas for EIP-1559 transactions.
+    </ParamField>
+    
+    <ParamField path="maxPriorityFeePerGas" type="number | string">
+      Maximum priority fee per gas for EIP-1559 transactions.
+    </ParamField>
+    
+    <ParamField path="nonce" type="number | string">
+      Transaction nonce. Optional in browser mode, required in node mode.
+    </ParamField>
+    
+    <ParamField path="onReceipt" type="(receipt: TransactionReceipt) => void">
+      Callback function that executes when the transaction receipt is received.
+    </ParamField>
+    
+    <ParamField path="onConfirmation" type="(confirmationNumber: number, receipt: TransactionReceipt) => void">
+      Callback function that executes on each block confirmation.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Returns
+
+<ResponseField type="Promise<Transaction>">
+  Returns a transaction object containing the transaction hash and receipt information.
+</ResponseField>
+
+## Example Usage
+
+### Browser Mode
+
+```typescript
+import { DSA } from "dsa-connect";
+import Web3 from "web3";
+
+const web3 = new Web3(window.ethereum);
+const dsa = new DSA(web3, 1); // 1 for Ethereum mainnet
+
+// Build a new DSA with default settings
+const transaction = await dsa.build({
+  from: "0x...", // Your wallet address
+});
+
+console.log("DSA created! Transaction hash:", transaction.hash);
+```
+
+### Node Mode
+
+```typescript
+import { DSA } from "dsa-connect";
+import Web3 from "web3";
+
+const web3 = new Web3("https://mainnet.infura.io/v3/YOUR_INFURA_KEY");
+const dsa = new DSA(
+  {
+    web3: web3,
+    mode: "node",
+    privateKey: "YOUR_PRIVATE_KEY",
+  },
+  1
+);
+
+// Build a new DSA with custom authority
+const transaction = await dsa.build({
+  from: "0x...",
+  authority: "0x...", // Address that will control the DSA
+  origin: "0x...", // Your app's address for analytics
+  version: 2,
+  gas: 1000000,
+  gasPrice: web3.utils.toWei("50", "gwei"),
+});
+
+console.log("DSA created! Transaction hash:", transaction.hash);
+```
+
+### With Callbacks
+
+```typescript
+const transaction = await dsa.build({
+  from: "0x...",
+  onReceipt: (receipt) => {
+    console.log("Transaction confirmed!", receipt);
+  },
+  onConfirmation: (confirmationNumber, receipt) => {
+    console.log(`Confirmation ${confirmationNumber}`, receipt);
+  },
+});
+```
+
+### Custom Authority and Version
+
+```typescript
+// Create a DSA where a different address has authority
+const transaction = await dsa.build({
+  from: "0xYourAddress...",
+  authority: "0xAuthorityAddress...", // This address will control the DSA
+  version: 2,
+});
+```
+
+## Notes
+
+- The `from` address pays for the transaction gas fees
+- The `authority` address will have control over the DSA and can execute spells
+- By default, if no authority is specified, the `from` address becomes the authority
+- Version 2 is the recommended and default version for new DSAs
+- After building a DSA, you can set it as the active instance using `dsa.setInstance(id)`
+- The origin parameter is useful for tracking which dApp or service created the DSA for analytics purposes
+
+## Error Handling
+
+```typescript
+try {
+  const transaction = await dsa.build({
+    from: "0x...",
+  });
+  console.log("DSA created successfully!");
+} catch (error) {
+  console.error("Failed to create DSA:", error.message);
+}
+```
+
+## Related Methods
+
+- [`setInstance()`](/api/accounts/set-instance) - Set the active DSA instance
+- [`getAccounts()`](/api/accounts/get-accounts) - Retrieve all DSA accounts for an authority

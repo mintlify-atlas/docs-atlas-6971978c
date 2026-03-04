@@ -1,0 +1,257 @@
+---
+title: "Setup Guide"
+description: "Complete setup guide for DSA Connect SDK in browser and Node.js environments"
+---
+
+This guide will help you set up the DSA Connect SDK in both browser and Node.js environments.
+
+## Installation
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npm install dsa-connect
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash
+    yarn add dsa-connect
+    ```
+  </Tab>
+  <Tab title="CDN">
+    ```html
+    <script src="https://cdn.jsdelivr.net/npm/dsa-connect@latest/dist/index.bundle.min.js"></script>
+    ```
+  </Tab>
+</Tabs>
+
+## Browser Setup
+
+<Steps>
+  <Step title="Initialize Web3">
+    First, initialize a Web3 instance connected to the user's wallet:
+
+    ```javascript
+    // Using MetaMask or other injected wallet
+    if (window.ethereum) {
+      window.web3 = new Web3(window.ethereum)
+      await window.ethereum.request({ method: 'eth_requestAccounts' })
+    } else if (window.web3) {
+      window.web3 = new Web3(window.web3.currentProvider)
+    } else {
+      // Fallback to custom provider
+      window.web3 = new Web3(customProvider)
+    }
+    ```
+  </Step>
+
+  <Step title="Initialize DSA">
+    Create a DSA instance with your Web3 instance:
+
+    ```javascript
+    import { DSA } from 'dsa-connect'
+
+    const dsa = new DSA(web3)
+    ```
+
+    <Note>
+      In browser mode, the SDK automatically uses the connected wallet to sign transactions.
+    </Note>
+  </Step>
+
+  <Step title="Specify Chain ID (Optional)">
+    By default, DSA Connect uses Ethereum Mainnet (Chain ID 1). To use a different chain:
+
+    ```javascript
+    // Polygon
+    const dsa = new DSA(web3, 137)
+
+    // Arbitrum
+    const dsa = new DSA(web3, 42161)
+
+    // Optimism
+    const dsa = new DSA(web3, 10)
+    ```
+
+    **Supported Chain IDs:**
+    - `1` - Ethereum Mainnet
+    - `137` - Polygon
+    - `42161` - Arbitrum
+    - `43114` - Avalanche
+    - `10` - Optimism
+    - `250` - Fantom
+    - `8453` - Base
+    - `9745` - Plasma
+    - `56` - BSC
+  </Step>
+</Steps>
+
+## Node.js Setup
+
+<Steps>
+  <Step title="Import Required Modules">
+    ```javascript
+    const Web3 = require('web3')
+    const DSA = require('dsa-connect')
+    ```
+  </Step>
+
+  <Step title="Initialize Web3 with Provider">
+    ```javascript
+    const web3 = new Web3(
+      new Web3.providers.HttpProvider('https://eth-mainnet.alchemyapi.io/v2/YOUR-API-KEY')
+    )
+    ```
+  </Step>
+
+  <Step title="Initialize DSA with Node Mode">
+    In Node.js, you must specify `mode: 'node'` and provide a private key:
+
+    ```javascript
+    const dsa = new DSA({
+      web3: web3,
+      mode: 'node',
+      privateKey: process.env.PRIVATE_KEY
+    }, 1) // Chain ID
+    ```
+
+    <Warning>
+      Never hardcode your private key. Always use environment variables or secure key management solutions.
+    </Warning>
+  </Step>
+</Steps>
+
+## Simulation Mode
+
+For testing and simulating transactions without actually signing them:
+
+```javascript
+const dsa = new DSA({
+  web3: web3,
+  mode: 'simulation',
+  publicKey: '0x...'
+}, 1)
+```
+
+<Note>
+  Simulation mode is useful for estimating gas costs and testing transaction flows without requiring a private key.
+</Note>
+
+## Configuration Options
+
+### DSAConfig Types
+
+<CodeGroup>
+```typescript Browser Mode
+type DSAConfig = {
+  web3: Web3
+  mode?: 'browser' // default
+}
+```
+
+```typescript Node Mode
+type DSAConfig = {
+  web3: Web3
+  mode: 'node'
+  privateKey: string
+}
+```
+
+```typescript Simulation Mode
+type DSAConfig = {
+  web3: Web3
+  mode: 'simulation'
+  publicKey: string
+}
+```
+</CodeGroup>
+
+### Advanced Options
+
+```javascript
+const dsa = new DSA(
+  web3,
+  chainId,
+  {
+    skipChainIdValidation: true // Skip automatic chain ID validation
+  }
+)
+```
+
+## Setting the Origin
+
+Set an origin address for analytics and affiliate tracking:
+
+```javascript
+dsa.setOrigin('0xYourOriginAddress')
+```
+
+The origin address is used for:
+- On-chain analytics
+- Affiliate tracking
+- Transaction attribution
+
+## Refreshing Chain ID
+
+If the user switches networks, refresh the chain ID:
+
+```javascript
+await dsa.refreshChainId()
+```
+
+## Complete Example
+
+<CodeGroup>
+```javascript Browser
+import { DSA } from 'dsa-connect'
+import Web3 from 'web3'
+
+// Initialize Web3
+if (window.ethereum) {
+  await window.ethereum.request({ method: 'eth_requestAccounts' })
+  const web3 = new Web3(window.ethereum)
+
+  // Initialize DSA
+  const dsa = new DSA(web3, 1)
+
+  // Set origin for analytics
+  dsa.setOrigin('0xYourOriginAddress')
+
+  console.log('DSA initialized successfully')
+}
+```
+
+```javascript Node.js
+const Web3 = require('web3')
+const DSA = require('dsa-connect')
+require('dotenv').config()
+
+// Initialize Web3
+const web3 = new Web3(
+  new Web3.providers.HttpProvider(process.env.RPC_URL)
+)
+
+// Initialize DSA
+const dsa = new DSA({
+  web3: web3,
+  mode: 'node',
+  privateKey: process.env.PRIVATE_KEY
+}, 1)
+
+// Set origin for analytics
+dsa.setOrigin('0xYourOriginAddress')
+
+console.log('DSA initialized successfully')
+```
+</CodeGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Creating Accounts" icon="user-plus" href="/guides/creating-accounts">
+    Learn how to create and manage DSA accounts
+  </Card>
+  <Card title="Casting Spells" icon="wand-magic-sparkles" href="/guides/casting-spells">
+    Start composing DeFi transactions
+  </Card>
+</CardGroup>

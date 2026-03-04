@@ -1,0 +1,817 @@
+---
+title: 'Connectors'
+description: 'Understand protocol connectors and explore available integrations'
+icon: 'plug'
+---
+
+## What are Connectors?
+
+Connectors are verified smart contracts that interface between DSA accounts and external DeFi protocols. Each connector provides standardized methods to interact with a specific protocol, enabling safe and composable multi-protocol transactions.
+
+<Info>
+Connectors act as adapters - they translate DSA spell calls into protocol-specific function calls while maintaining security and composability.
+</Info>
+
+## Connector Architecture
+
+### Naming Convention
+
+Connectors follow a consistent naming pattern:
+
+```
+{PROTOCOL}-{VERSION?}-{VARIANT}
+```
+
+Examples:
+- `AAVE-V3-A` - Aave V3, variant A
+- `COMPOUND-V3-A` - Compound V3, variant A
+- `UNISWAP-V3-SWAP-A` - Uniswap V3 swap functionality, variant A
+- `1INCH-V6-A` - 1inch V6, variant A
+
+<Note>
+The variant letter (A, B, C, etc.) indicates different versions or implementations of the same protocol connector. Newer variants typically include bug fixes or feature enhancements.
+</Note>
+
+### Connector Versions
+
+DSA supports two connector version systems:
+
+- **Version 1 (V1)**: Legacy connectors for older DSA accounts
+- **Version 2 (V2)**: Current standard with enhanced features (recommended)
+
+<Warning>
+Always use Version 2 connectors with Version 2 DSA accounts for optimal compatibility.
+</Warning>
+
+## Multi-Chain Support
+
+Connectors are deployed across multiple blockchain networks:
+
+<Tabs>
+  <Tab title="Ethereum Mainnet">
+    Chain ID: 1
+    
+    Most comprehensive connector ecosystem with 100+ available connectors.
+  </Tab>
+  
+  <Tab title="Polygon">
+    Chain ID: 137
+    
+    Popular L2 with major DeFi protocols available.
+  </Tab>
+  
+  <Tab title="Arbitrum">
+    Chain ID: 42161
+    
+    Optimistic rollup with growing DeFi ecosystem.
+  </Tab>
+  
+  <Tab title="Optimism">
+    Chain ID: 10
+    
+    Optimistic rollup with key DeFi protocols.
+  </Tab>
+  
+  <Tab title="Avalanche">
+    Chain ID: 43114
+    
+    High-performance chain with DeFi integrations.
+  </Tab>
+  
+  <Tab title="Base">
+    Chain ID: 8453
+    
+    Coinbase's L2 with emerging DeFi ecosystem.
+  </Tab>
+  
+  <Tab title="Fantom">
+    Chain ID: 250
+    
+    Fast, low-cost chain with DeFi protocols.
+  </Tab>
+  
+  <Tab title="BSC">
+    Chain ID: 56
+    
+    Binance Smart Chain with DeFi integrations.
+  </Tab>
+</Tabs>
+
+## Available Connectors
+
+### Lending & Borrowing
+
+<AccordionGroup>
+  <Accordion title="Aave" icon="circle-a">
+    **Connectors**: `AAVE-V1-A`, `AAVE-V2-A`, `AAVE-V3-A`, `AAVE-V3-LIDO-A`, `AAVE-V3-ETHERFI`
+    
+    Interact with Aave's lending markets:
+    - Deposit/withdraw assets
+    - Borrow/repay loans
+    - Enable/disable collateral
+    - Claim rewards
+    - Import positions
+    
+    ```javascript
+    spell.add({
+      connector: 'AAVE-V3-A',
+      method: 'deposit',
+      args: [tokenAddress, amount, 0, 0]
+    })
+    ```
+  </Accordion>
+  
+  <Accordion title="Compound" icon="circle-c">
+    **Connectors**: `COMPOUND-A`, `COMPOUND-V3-A`, `COMPOUND-V3-REWARDS-A`
+    
+    Interact with Compound markets:
+    - Supply/withdraw assets
+    - Borrow/repay loans
+    - Claim COMP rewards
+    - Manage collateral
+    
+    ```javascript
+    spell.add({
+      connector: 'COMPOUND-V3-A',
+      method: 'supply',
+      args: [market, tokenAddress, amount, 0, 0]
+    })
+    ```
+  </Accordion>
+  
+  <Accordion title="Morpho" icon="circle-m">
+    **Connectors**: `MORPHO-AAVE-V2-A`, `MORPHO-AAVE-V3-A`, `MORPHO-COMPOUND-V2-A`, `MORPHO-BLUE-A`
+    
+    Access optimized lending rates through Morpho:
+    - Supply to optimized markets
+    - Borrow at better rates
+    - Claim MORPHO rewards
+    
+    ```javascript
+    spell.add({
+      connector: 'MORPHO-BLUE-A',
+      method: 'supply',
+      args: [marketId, amount, 0, 0]
+    })
+    ```
+  </Accordion>
+  
+  <Accordion title="Spark" icon="sparkles">
+    **Connectors**: `SPARK-A`, `SPARK-CLAIM-A`, `SPARK-PSM-A`
+    
+    Interact with Spark Protocol (MakerDAO's lending protocol):
+    - Deposit/withdraw assets
+    - Borrow/repay loans
+    - Claim rewards
+    - PSM (Peg Stability Module) operations
+  </Accordion>
+  
+  <Accordion title="Euler" icon="circle-e">
+    **Connectors**: `EULER-A`, `EULER-REWARDS-A`, `EULER-IMPORT-A`
+    
+    Access Euler Finance:
+    - Deposit/withdraw assets
+    - Borrow/repay loans
+    - Claim EUL rewards
+    - Import positions
+  </Accordion>
+  
+  <Accordion title="Notional" icon="music">
+    **Connectors**: `NOTIONAL-V2-A`
+    
+    Fixed-rate lending and borrowing through Notional:
+    - Lend at fixed rates
+    - Borrow at fixed rates
+    - Provide liquidity
+  </Accordion>
+</AccordionGroup>
+
+### Decentralized Exchanges
+
+<AccordionGroup>
+  <Accordion title="Uniswap" icon="arrow-right-arrow-left">
+    **Connectors**: `UNISWAP-A`, `UNISWAP-V2-A`, `UNISWAP-V3-A`, `UNISWAP-V3-SWAP-A`, `UNISWAP-V3-STAKER-B`
+    
+    Trade and provide liquidity on Uniswap:
+    - Swap tokens (V2 & V3)
+    - Add/remove liquidity
+    - Collect fees
+    - Stake LP tokens
+    
+    ```javascript
+    spell.add({
+      connector: 'UNISWAP-V3-SWAP-A',
+      method: 'swap',
+      args: [tokenIn, tokenOut, amountIn, minAmountOut, 0, 0]
+    })
+    ```
+  </Accordion>
+  
+  <Accordion title="1inch" icon="circle-1">
+    **Connectors**: `1INCH-V3-A`, `1INCH-V4-A`, `1INCH-V5-A`, `1INCH-V6-A`
+    
+    Get best swap rates through 1inch aggregator:
+    - Swap tokens at optimal rates
+    - Split orders across DEXs
+    - Limit orders
+  </Accordion>
+  
+  <Accordion title="Paraswap" icon="repeat">
+    **Connectors**: `PARASWAP-V5-A`, `PARASWAP-V6-A`
+    
+    Aggregate liquidity through Paraswap:
+    - Multi-path swaps
+    - Gas-optimized routing
+    - Best price execution
+  </Accordion>
+  
+  <Accordion title="0x Protocol" icon="circle-0">
+    **Connectors**: `ZEROX-A`, `ZEROX-V4-A`, `ZEROX-V5-A`
+    
+    Professional trading through 0x:
+    - Swap tokens
+    - Access aggregated liquidity
+    - RFQ system
+  </Accordion>
+  
+  <Accordion title="SushiSwap" icon="circle-s">
+    **Connectors**: `SUSHISWAP-A`
+    
+    Trade on SushiSwap DEX:
+    - Swap tokens
+    - Add/remove liquidity
+    - Stake SUSHI
+  </Accordion>
+  
+  <Accordion title="Kyber" icon="circle-k">
+    **Connectors**: `KYBER-AGGREGATOR-A`
+    
+    Access Kyber Network aggregated liquidity:
+    - Best rate swaps
+    - Multi-source routing
+  </Accordion>
+  
+  <Accordion title="OKX" icon="circle-o">
+    **Connectors**: `OKX-A`, `OKX-V6-A`
+    
+    Trade through OKX DEX:
+    - Token swaps
+    - Aggregated liquidity
+  </Accordion>
+  
+  <Accordion title="Odos" icon="wave-square">
+    **Connectors**: `ODOS-V2-A`
+    
+    Optimized routing through Odos:
+    - Multi-path swaps
+    - Gas-efficient routing
+  </Accordion>
+</AccordionGroup>
+
+### Stablecoins & Governance
+
+<AccordionGroup>
+  <Accordion title="MakerDAO" icon="vault">
+    **Connectors**: `MAKERDAO-A`, `MAKERDAO-CLAIM-A`
+    
+    Manage Maker vaults (CDPs):
+    - Open/close vaults
+    - Deposit/withdraw collateral
+    - Mint/burn DAI
+    - Claim MKR rewards
+    
+    ```javascript
+    spell.add({
+      connector: 'MAKERDAO-A',
+      method: 'open',
+      args: [ilkType, 0]
+    })
+    ```
+  </Accordion>
+  
+  <Accordion title="Liquity" icon="droplet">
+    **Connectors**: `LIQUITY-A`, `B-LIQUITY-A`
+    
+    Manage Liquity troves:
+    - Open/close troves
+    - Deposit/withdraw ETH collateral
+    - Borrow/repay LUSD
+    - Stake LQTY
+  </Accordion>
+  
+  <Accordion title="Reflexer" icon="recycle">
+    **Connectors**: `REFLEXER-A`
+    
+    Interact with Reflexer (RAI):
+    - Open/manage safes
+    - Mint/burn RAI
+    - Manage collateral
+  </Accordion>
+  
+  <Accordion title="Curve USD" icon="dollar-sign">
+    **Connectors**: `CURVE-USD-A`
+    
+    Access Curve's crvUSD stablecoin:
+    - Mint/burn crvUSD
+    - Manage collateral
+    - Leverage positions
+  </Accordion>
+  
+  <Accordion title="USDS" icon="circle-dollar">
+    **Connectors**: `USDS-A`
+    
+    Interact with USDS stablecoin:
+    - Mint/burn USDS
+    - Manage positions
+  </Accordion>
+</AccordionGroup>
+
+### Liquid Staking & ETH Derivatives
+
+<AccordionGroup>
+  <Accordion title="Lido" icon="droplet">
+    **Connectors**: `LIDO-STETH-A`, `WSTETH-A`
+    
+    Stake ETH through Lido:
+    - Stake ETH for stETH
+    - Wrap stETH to wstETH
+    - Unwrap wstETH
+    
+    ```javascript
+    spell.add({
+      connector: 'LIDO-STETH-A',
+      method: 'deposit',
+      args: [amount, 0, 0]
+    })
+    ```
+  </Accordion>
+  
+  <Accordion title="EtherFi" icon="fire">
+    **Connectors**: `EETH-A`, `WEETH-A`, `WEETHS-A`, `ETHERFI-MINT-A`
+    
+    Access EtherFi liquid staking:
+    - Stake ETH for eETH
+    - Wrap to weETH
+    - Mint liquid staking tokens
+  </Accordion>
+  
+  <Accordion title="WETH" icon="ethereum">
+    **Connectors**: `WETH-A`
+    
+    Wrap/unwrap ETH:
+    - Convert ETH to WETH
+    - Convert WETH to ETH
+    
+    ```javascript
+    spell.add({
+      connector: 'WETH-A',
+      method: 'deposit',
+      args: [amount, 0, 0]
+    })
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Yield & Vaults
+
+<AccordionGroup>
+  <Accordion title="Yearn" icon="seedling">
+    **Connectors**: `YEARN-VAULT-A`
+    
+    Interact with Yearn vaults:
+    - Deposit to vaults
+    - Withdraw from vaults
+    - Claim yields
+  </Accordion>
+  
+  <Accordion title="Fluid" icon="flask">
+    **Connectors**: `FLUID-A`, `FLUID-STAKING-A`, `FLUID-VAULT-T2-A`, `FLUID-VAULT-T3-A`, `FLUID-VAULT-T4-A`
+    
+    Access Fluid Protocol:
+    - Vault operations
+    - Staking
+    - Rewards claiming
+  </Accordion>
+  
+  <Accordion title="mStable" icon="circle-m">
+    **Connectors**: `MSTABLE-A`
+    
+    Use mStable baskets:
+    - Mint mAssets
+    - Redeem mAssets
+    - Swap within baskets
+  </Accordion>
+</AccordionGroup>
+
+### Bridges & Cross-Chain
+
+<AccordionGroup>
+  <Accordion title="Polygon Bridge" icon="bridge">
+    **Connectors**: `POLYGON-BRIDGE-A`
+    
+    Bridge assets to Polygon:
+    - Deposit to Polygon
+    - Withdraw from Polygon
+    
+    ```javascript
+    spell.add({
+      connector: 'POLYGON-BRIDGE-A',
+      method: 'deposit',
+      args: [tokenAddress, amount, 0, 0]
+    })
+    ```
+  </Accordion>
+  
+  <Accordion title="Hop Protocol" icon="arrow-right-arrow-left">
+    **Connectors**: `HOP-MAINNET-A`
+    
+    Fast cross-chain transfers via Hop:
+    - Bridge to L2s
+    - Bridge between L2s
+    - Liquidity provision
+  </Accordion>
+  
+  <Accordion title="Connext" icon="link">
+    **Connectors**: `CONNEXT-A`
+    
+    Cross-chain swaps through Connext:
+    - Transfer assets across chains
+    - Cross-chain liquidity
+  </Accordion>
+  
+  <Accordion title="Interop" icon="network-wired">
+    **Connectors**: `INTEROP-A`, `INTEROP-STAGING-A`
+    
+    Inter-protocol operations:
+    - Cross-protocol interactions
+    - Batch operations
+  </Accordion>
+</AccordionGroup>
+
+### Utility Connectors
+
+<AccordionGroup>
+  <Accordion title="BASIC" icon="cube">
+    **Connectors**: `BASIC-A`, `BASIC-B`, `BASIC-C`, `BASIC-D`, `BASIC-D-V2`
+    
+    Fundamental operations:
+    - Deposit ETH/tokens to DSA
+    - Withdraw ETH/tokens from DSA
+    - Transfer between addresses
+    
+    ```javascript
+    // Deposit ETH to DSA
+    spell.add({
+      connector: 'BASIC-D-V2',
+      method: 'deposit',
+      args: [
+        '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+        amount,
+        0,
+        0
+      ]
+    })
+    ```
+  </Accordion>
+  
+  <Accordion title="AUTHORITY" icon="user-shield">
+    **Connectors**: `AUTHORITY-A`
+    
+    Manage DSA authorities:
+    - Add authority
+    - Remove authority
+    - Toggle authority status
+    
+    ```javascript
+    spell.add({
+      connector: 'AUTHORITY-A',
+      method: 'add',
+      args: [newAuthorityAddress]
+    })
+    ```
+  </Accordion>
+  
+  <Accordion title="INSTAPOOL" icon="water">
+    **Connectors**: `INSTAPOOL-A`, `INSTAPOOL-B`, `INSTAPOOL-C`, `INSTAPOOL-D`
+    
+    Flash loan functionality:
+    - Borrow flash loans
+    - Repay flash loans
+    - Multiple token flash loans
+    
+    ```javascript
+    // Borrow flash loan
+    spell.add({
+      connector: 'INSTAPOOL-D',
+      method: 'flashBorrow',
+      args: [tokenAddress, amount, 0, 0]
+    })
+    
+    // ... use borrowed funds ...
+    
+    // Repay flash loan
+    spell.add({
+      connector: 'INSTAPOOL-D',
+      method: 'flashPayback',
+      args: [tokenAddress, 0, 0]
+    })
+    ```
+  </Accordion>
+  
+  <Accordion title="LITE" icon="feather">
+    **Connectors**: `LITE-A`, `LITE-B`
+    
+    Lightweight utility operations:
+    - Basic transfers
+    - Simple swaps
+    - Gas-optimized actions
+  </Accordion>
+  
+  <Accordion title="SWAP-AGGREGATOR" icon="shuffle">
+    **Connectors**: `SWAP-AGGREGATOR-A`
+    
+    Generic swap aggregation:
+    - Route through multiple DEXs
+    - Best price finding
+    - Unified swap interface
+  </Accordion>
+  
+  <Accordion title="AVO-APPROVE" icon="check">
+    **Connectors**: `AVO-APPROVE-A`, `AVO-APPROVE-MULTISIG-A`
+    
+    Approval management for Avocado wallets:
+    - Set token approvals
+    - Manage permissions
+    - Multisig approvals
+  </Accordion>
+</AccordionGroup>
+
+### Rewards & Claims
+
+<AccordionGroup>
+  <Accordion title="INST Staking" icon="coins">
+    **Connectors**: `INST-STAKING-A`, `INST-STAKING-B`, `INST-A`, `INST-LM-A`
+    
+    Stake and earn INST tokens:
+    - Stake INST
+    - Unstake INST
+    - Claim rewards
+    - Liquidity mining
+  </Accordion>
+  
+  <Accordion title="Merkle Claims" icon="tree">
+    **Connectors**: `MERKLE-CLAIM-A`, `MERKLE-CLAIM-LRT-A`, `FLUID-MERKLE-CLAIM-A`
+    
+    Claim airdropped tokens:
+    - Claim merkle drops
+    - Batch claims
+    - Protocol-specific claims
+  </Accordion>
+  
+  <Accordion title="Protocol Claims" icon="gift">
+    **Connectors**: `AAVE-CLAIM-A`, `MAKERDAO-CLAIM-A`, `SPARK-CLAIM-A`, `SPK-CLAIM-A`, `MORPHO-CLAIM-A`
+    
+    Claim protocol rewards:
+    - AAVE rewards
+    - MKR rewards
+    - SPARK rewards
+    - MORPHO rewards
+  </Accordion>
+  
+  <Accordion title="Staking Rewards" icon="star">
+    **Connectors**: `STAKE-ERC20-A`, `GELATO-AAVE-A`, `UNISWAP-V3-STAKE-A`
+    
+    Stake and earn:
+    - Generic ERC20 staking
+    - Protocol-specific staking
+    - LP token staking
+  </Accordion>
+</AccordionGroup>
+
+### Specialized Connectors
+
+<AccordionGroup>
+  <Accordion title="Refinance" icon="rotate">
+    **Connectors**: `REFINANCE-A`
+    
+    Refinance debt positions:
+    - Move debt between protocols
+    - Optimize interest rates
+    - Batch position migration
+  </Accordion>
+  
+  <Accordion title="Import Connectors" icon="file-import">
+    **Connectors**: `AAVE-V1-IMPORT-A`, `AAVE-V2-IMPORT-B`, `COMPOUND-IMPORT-C`, `EULER-IMPORT-A`, `SPARK-IMPORT-A`
+    
+    Import existing positions to DSA:
+    - Migrate positions to DSA
+    - Maintain existing debt/collateral
+    - Enable DSA composability
+  </Accordion>
+  
+  <Accordion title="Gelato Automation" icon="robot">
+    **Connectors**: `GELATO-AAVE-A`
+    
+    Automated strategies:
+    - Automated limit orders
+    - Stop-loss orders
+    - Automated rebalancing
+  </Accordion>
+  
+  <Accordion title="PoolTogether" icon="ticket">
+    **Connectors**: `POOLTOGETHER-A`
+    
+    No-loss lottery:
+    - Deposit to prize pools
+    - Withdraw deposits
+    - Claim prizes
+  </Accordion>
+  
+  <Accordion title="Ubiquity" icon="infinity">
+    **Connectors**: `UBIQUITY-A`
+    
+    Ubiquity Dollar operations:
+    - Mint/burn uAD
+    - Manage collateral
+  </Accordion>
+  
+  <Accordion title="Universe" icon="globe">
+    **Connectors**: `UNIVERSE-A`
+    
+    Universe protocol integration:
+    - NFT-backed loans
+    - Collateral management
+  </Accordion>
+  
+  <Accordion title="DSA Spell" icon="wand-magic-sparkles">
+    **Connectors**: `DSA-SPELL-A`
+    
+    Advanced spell operations:
+    - Nested spells
+    - Meta-transactions
+    - Batch operations
+  </Accordion>
+</AccordionGroup>
+
+## Using Connectors
+
+### Basic Usage
+
+To use a connector, add it to your spell:
+
+```javascript
+const spell = dsa.Spell()
+
+spell.add({
+  connector: 'CONNECTOR-NAME',
+  method: 'methodName',
+  args: [arg1, arg2, ...]
+})
+
+await spell.cast()
+```
+
+### Finding Connector Methods
+
+Each connector has specific methods for interacting with its protocol. Common method patterns:
+
+**Lending Protocols:**
+- `deposit(token, amount, getId, setId)`
+- `withdraw(token, amount, getId, setId)`
+- `borrow(token, amount, rateMode, getId, setId)`
+- `payback(token, amount, rateMode, getId, setId)`
+
+**DEX Protocols:**
+- `swap(tokenIn, tokenOut, amount, minReturn, getId, setId)`
+- `addLiquidity(token0, token1, amount0, amount1, ...)`
+- `removeLiquidity(token0, token1, liquidity, ...)`
+
+**Utility:**
+- `deposit(token, amount, getId, setId)` - Deposit to DSA
+- `withdraw(token, amount, to, getId, setId)` - Withdraw from DSA
+
+<Tip>
+Refer to the [connector source code](https://github.com/Instadapp/dsa-connectors-new) for detailed method signatures and parameters.
+</Tip>
+
+### Connector Addresses
+
+Connector addresses are network-specific and managed by the SDK:
+
+```javascript
+// Connectors are automatically resolved based on chainId
+const dsa = new DSA(web3, 1) // Ethereum mainnet
+
+spell.add({
+  connector: 'AAVE-V3-A', // SDK resolves to correct address for chain 1
+  method: 'deposit',
+  args: [/* ... */]
+})
+```
+
+## Creating Custom Connectors
+
+Developers can create custom connectors for new protocols:
+
+<Steps>
+  <Step title="Implement Connector Interface">
+    Create a connector contract following the standard interface
+  </Step>
+  <Step title="Add Protocol Logic">
+    Implement methods to interact with the target protocol
+  </Step>
+  <Step title="Add Storage ID Support">
+    Implement getId/setId for composability
+  </Step>
+  <Step title="Test Thoroughly">
+    Test all methods and edge cases
+  </Step>
+  <Step title="Submit for Review">
+    Submit to the Instadapp connector repository for review and deployment
+  </Step>
+</Steps>
+
+See the [DSA Connectors Repository](https://github.com/Instadapp/dsa-connectors-new) for more information.
+
+## Best Practices
+
+### 1. Use Latest Versions
+
+Always use the latest connector versions for bug fixes and improvements:
+
+```javascript
+// Good: Use latest version
+spell.add({ connector: 'AAVE-V3-A', ... })
+
+// Avoid: Using older versions unless necessary
+spell.add({ connector: 'AAVE-V1-A', ... })
+```
+
+### 2. Verify Connector Availability
+
+Check if a connector exists on your target chain before using it:
+
+```javascript
+const chainId = await dsa.web3.eth.getChainId()
+if (chainId === 1) {
+  // Use mainnet-specific connectors
+  spell.add({ connector: 'COMPOUND-V3-A', ... })
+}
+```
+
+### 3. Handle Connector Upgrades
+
+Be aware of connector variants (A, B, C):
+
+```javascript
+// BASIC-D-V2 is newer than BASIC-D
+spell.add({ connector: 'BASIC-D-V2', ... })
+```
+
+### 4. Combine Connectors Efficiently
+
+Minimize gas by ordering connector calls logically:
+
+```javascript
+const spell = dsa.Spell()
+
+// 1. Withdraw from protocol
+spell.add({ connector: 'COMPOUND-V3-A', method: 'withdraw', ... })
+
+// 2. Swap tokens
+spell.add({ connector: 'UNISWAP-V3-SWAP-A', method: 'swap', ... })
+
+// 3. Deposit to another protocol
+spell.add({ connector: 'AAVE-V3-A', method: 'deposit', ... })
+
+await spell.cast()
+```
+
+## Connector Security
+
+<Warning>
+All connectors are audited and verified before deployment, but always:
+- Test on testnets first
+- Start with small amounts
+- Understand the underlying protocol risks
+- Review connector source code for critical operations
+</Warning>
+
+### Verified Contracts
+
+All official connectors are:
+- ✅ Open source
+- ✅ Audited by security firms
+- ✅ Deployed from verified code
+- ✅ Maintained by Instadapp team
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="View Connector Source" icon="github" href="https://github.com/Instadapp/dsa-connectors-new">
+    Browse connector implementations
+  </Card>
+  <Card title="Build Strategies" icon="lightbulb" href="/guides/casting-spells">
+    Learn how to combine connectors
+  </Card>
+</CardGroup>

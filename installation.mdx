@@ -1,0 +1,94 @@
+---
+title: Installation
+description: Install DSA Connect SDK via npm, yarn, pnpm, or CDN to start building on Instadapp's DeFi Smart Accounts
+---
+
+DSA Connect is the official SDK for JavaScript, available for browsers and Node.js backends. This guide covers multiple installation methods to get you started quickly.
+
+## Package Manager Installation
+
+Install DSA Connect using your preferred package manager:
+
+<CodeGroup>
+
+```bash npm
+npm install dsa-connect
+```
+
+```bash yarn
+yarn add dsa-connect
+```
+
+```bash pnpm
+pnpm add dsa-connect
+```
+
+</CodeGroup>
+
+<Note>
+  DSA Connect requires `web3` version `^1.5.0` as a peer dependency. Make sure you have it installed:
+  
+  ```bash
+  npm install web3
+  ```
+</Note>
+
+## CDN Installation
+
+For browser-based projects, you can use the jsDelivr CDN:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/dsa-connect@latest/dist/index.bundle.min.js"></script>
+```
+
+<Warning>
+  Using `@latest` will always fetch the most recent version. For production apps, pin to a specific version:
+  
+  ```html
+  <script src="https://cdn.jsdelivr.net/npm/dsa-connect@0.7.50/dist/index.bundle.min.js"></script>
+  ```
+</Warning>
+
+## Verify Installation
+
+After installation, verify that DSA Connect is properly installed:
+
+<Tabs>
+  <Tab title="ES6 Modules">
+    ```javascript
+    import DSA from 'dsa-connect';
+    
+    console.log(DSA.version); // Outputs the SDK version
+    ```
+  </Tab>
+  
+  <Tab title="CommonJS">
+    ```javascript
+    const DSA = require('dsa-connect');
+    
+    console.log(DSA.version); // Outputs the SDK version
+    ```
+  </Tab>
+  
+  <Tab title="Browser (CDN)">
+    ```html
+    <script>
+      console.log(typeof DSA); // Should output "function"
+    </script>
+    ```
+  </Tab>
+</Tabs>
+
+## System Requirements
+
+<Info>
+  **Supported Networks**: Ethereum Mainnet (1), Polygon (137), Arbitrum (42161), Avalanche (43114), Optimism (10), Fantom (250), Base (8453), Plasma (9745), BSC (56)
+</Info>
+
+- Node.js 12.0 or higher (for Node.js environments)
+- Web3.js ^1.5.0
+- Modern browser with ES6 support (for browser environments)
+
+## Next Steps
+
+Now that you have DSA Connect installed, proceed to the [Quickstart](/quickstart) guide to initialize the SDK and create your first DSA account.

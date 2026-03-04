@@ -1,0 +1,390 @@
+---
+title: ERC20 & ERC721 Utilities
+description: Token transfer and approval utilities for ERC20 and ERC721 tokens
+---
+
+## ERC20
+
+Utility class for interacting with ERC20 tokens.
+
+### Constructor
+
+The ERC20 class is automatically instantiated and available as `dsa.erc20`.
+
+### Methods
+
+#### transfer
+
+Transfer ERC20 tokens or ETH.
+
+```typescript
+await dsa.erc20.transfer(params: Erc20InputParams): Promise<string>
+```
+
+**Parameters:**
+
+<ParamField path="token" type="string" required>
+  Token address or symbol (e.g., "DAI", "USDC", "eth")
+</ParamField>
+
+<ParamField path="amount" type="string" required>
+  Amount to transfer. Use "-1" or `dsa.maxValue` for maximum balance (ERC20 only)
+</ParamField>
+
+<ParamField path="to" type="string">
+  Recipient address. Defaults to DSA instance address
+</ParamField>
+
+<ParamField path="from" type="string">
+  Sender address. Auto-detected if not provided
+</ParamField>
+
+<ParamField path="gas" type="string | number">
+  Gas limit for the transaction
+</ParamField>
+
+<ParamField path="gasPrice" type="string | number">
+  Gas price in wei (required in node mode)
+</ParamField>
+
+<ParamField path="maxFeePerGas" type="string | number">
+  Maximum fee per gas for EIP-1559 transactions
+</ParamField>
+
+<ParamField path="maxPriorityFeePerGas" type="string | number">
+  Maximum priority fee per gas for EIP-1559 transactions
+</ParamField>
+
+<ParamField path="nonce" type="number | string">
+  Transaction nonce (required in node mode)
+</ParamField>
+
+**Returns:** Transaction hash as a string
+
+**Example:**
+
+```typescript
+// Transfer 100 DAI to DSA
+const txHash = await dsa.erc20.transfer({
+  token: "DAI",
+  amount: "100000000000000000000", // 100 DAI in wei
+  to: dsa.instance.address
+});
+
+// Transfer all USDC balance
+const txHash = await dsa.erc20.transfer({
+  token: "USDC",
+  amount: "-1", // Max balance
+  to: "0x..."
+});
+
+// Transfer ETH
+const txHash = await dsa.erc20.transfer({
+  token: "eth",
+  amount: "1000000000000000000", // 1 ETH
+  to: "0x..."
+});
+```
+
+#### transferTxObj
+
+Get the transaction object for transferring tokens without sending it.
+
+```typescript
+await dsa.erc20.transferTxObj(params: Erc20InputParams): Promise<TransactionConfig>
+```
+
+**Parameters:** Same as `transfer()`
+
+**Returns:** TransactionConfig object ready to be signed and sent
+
+**Example:**
+
+```typescript
+const txObj = await dsa.erc20.transferTxObj({
+  token: "DAI",
+  amount: "100000000000000000000",
+  to: "0x..."
+});
+
+// Inspect or modify before sending
+console.log(txObj);
+```
+
+#### approve
+
+Approve an address to spend ERC20 tokens.
+
+```typescript
+await dsa.erc20.approve(params: Erc20InputParams): Promise<string>
+```
+
+**Parameters:**
+
+<ParamField path="token" type="string" required>
+  Token address or symbol (cannot be "eth")
+</ParamField>
+
+<ParamField path="amount" type="string" required>
+  Approval amount. Use `dsa.maxValue` for unlimited approval
+</ParamField>
+
+<ParamField path="to" type="string" required>
+  Spender address to approve
+</ParamField>
+
+<ParamField path="from" type="string">
+  Token owner address. Auto-detected if not provided
+</ParamField>
+
+<ParamField path="gas" type="string | number">
+  Gas limit for the transaction
+</ParamField>
+
+<ParamField path="gasPrice" type="string | number">
+  Gas price in wei (required in node mode)
+</ParamField>
+
+<ParamField path="maxFeePerGas" type="string | number">
+  Maximum fee per gas for EIP-1559 transactions
+</ParamField>
+
+<ParamField path="maxPriorityFeePerGas" type="string | number">
+  Maximum priority fee per gas for EIP-1559 transactions
+</ParamField>
+
+<ParamField path="nonce" type="number | string">
+  Transaction nonce (required in node mode)
+</ParamField>
+
+**Returns:** Transaction hash as a string
+
+**Example:**
+
+```typescript
+// Approve unlimited DAI spending
+const txHash = await dsa.erc20.approve({
+  token: "DAI",
+  amount: dsa.maxValue,
+  to: "0xSpenderAddress..."
+});
+
+// Approve specific amount
+const txHash = await dsa.erc20.approve({
+  token: "USDC",
+  amount: "1000000000", // 1000 USDC (6 decimals)
+  to: "0xSpenderAddress..."
+});
+```
+
+<Note>
+ETH does not require approval. Attempting to approve ETH will throw an error.
+</Note>
+
+#### approveTxObj
+
+Get the transaction object for approving tokens without sending it.
+
+```typescript
+await dsa.erc20.approveTxObj(params: Erc20InputParams): Promise<TransactionConfig>
+```
+
+**Parameters:** Same as `approve()`
+
+**Returns:** TransactionConfig object ready to be signed and sent
+
+---
+
+## ERC721
+
+Utility class for interacting with ERC721 (NFT) tokens.
+
+### Constructor
+
+The ERC721 class is automatically instantiated and available as `dsa.erc721`.
+
+### Methods
+
+#### transfer
+
+Transfer ERC721 tokens (NFTs) using `safeTransferFrom`.
+
+```typescript
+await dsa.erc721.transfer(params: Erc721InputParams): Promise<string>
+```
+
+**Parameters:**
+
+<ParamField path="token" type="string" required>
+  NFT contract address or symbol
+</ParamField>
+
+<ParamField path="tokenId" type="number" required>
+  Token ID of the NFT to transfer
+</ParamField>
+
+<ParamField path="to" type="string">
+  Recipient address. Defaults to DSA instance address
+</ParamField>
+
+<ParamField path="from" type="string">
+  Sender address. Auto-detected if not provided
+</ParamField>
+
+<ParamField path="gas" type="string | number">
+  Gas limit for the transaction
+</ParamField>
+
+<ParamField path="gasPrice" type="string | number">
+  Gas price in wei (required in node mode)
+</ParamField>
+
+<ParamField path="maxFeePerGas" type="string | number">
+  Maximum fee per gas for EIP-1559 transactions
+</ParamField>
+
+<ParamField path="maxPriorityFeePerGas" type="string | number">
+  Maximum priority fee per gas for EIP-1559 transactions
+</ParamField>
+
+<ParamField path="nonce" type="number | string">
+  Transaction nonce (required in node mode)
+</ParamField>
+
+**Returns:** Transaction hash as a string
+
+**Example:**
+
+```typescript
+// Transfer NFT to DSA
+const txHash = await dsa.erc721.transfer({
+  token: "0xNFTContractAddress...",
+  tokenId: 1234,
+  to: dsa.instance.address
+});
+
+// Transfer NFT to another address
+const txHash = await dsa.erc721.transfer({
+  token: "0xNFTContractAddress...",
+  tokenId: 5678,
+  to: "0xRecipientAddress..."
+});
+```
+
+#### transferTxObj
+
+Get the transaction object for transferring NFTs without sending it.
+
+```typescript
+await dsa.erc721.transferTxObj(params: Erc721InputParams): Promise<TransactionConfig>
+```
+
+**Parameters:** Same as `transfer()`
+
+**Returns:** TransactionConfig object ready to be signed and sent
+
+#### approve
+
+Approve an address to transfer a specific ERC721 token.
+
+```typescript
+await dsa.erc721.approve(params: Erc721InputParams): Promise<string>
+```
+
+**Parameters:**
+
+<ParamField path="token" type="string" required>
+  NFT contract address or symbol
+</ParamField>
+
+<ParamField path="tokenId" type="number" required>
+  Token ID to approve
+</ParamField>
+
+<ParamField path="to" type="string" required>
+  Approved address
+</ParamField>
+
+<ParamField path="from" type="string">
+  Token owner address. Auto-detected if not provided
+</ParamField>
+
+<ParamField path="gas" type="string | number">
+  Gas limit for the transaction
+</ParamField>
+
+<ParamField path="gasPrice" type="string | number">
+  Gas price in wei (required in node mode)
+</ParamField>
+
+<ParamField path="maxFeePerGas" type="string | number">
+  Maximum fee per gas for EIP-1559 transactions
+</ParamField>
+
+<ParamField path="maxPriorityFeePerGas" type="string | number">
+  Maximum priority fee per gas for EIP-1559 transactions
+</ParamField>
+
+<ParamField path="nonce" type="number | string">
+  Transaction nonce (required in node mode)
+</ParamField>
+
+**Returns:** Transaction hash as a string
+
+**Example:**
+
+```typescript
+const txHash = await dsa.erc721.approve({
+  token: "0xNFTContractAddress...",
+  tokenId: 1234,
+  to: "0xApprovedAddress..."
+});
+```
+
+#### approveTxObj
+
+Get the transaction object for approving NFT transfers without sending it.
+
+```typescript
+await dsa.erc721.approveTxObj(params: Erc721InputParams): Promise<TransactionConfig>
+```
+
+**Parameters:** Same as `approve()`
+
+**Returns:** TransactionConfig object ready to be signed and sent
+
+---
+
+## Types
+
+### Erc20InputParams
+
+```typescript
+type Erc20InputParams = {
+  token: string;  // Token address or symbol
+  amount: string; // Amount in wei
+  to?: string;    // Recipient address
+  from?: string;  // Sender address
+  gas?: string | number;
+  gasPrice?: string | number;
+  maxFeePerGas?: string | number;
+  maxPriorityFeePerGas?: string | number;
+  nonce?: number | string;
+}
+```
+
+### Erc721InputParams
+
+```typescript
+type Erc721InputParams = {
+  token: string;  // NFT contract address or symbol
+  tokenId: number; // Token ID
+  to?: string;    // Recipient address
+  from?: string;  // Sender address
+  gas?: string | number;
+  gasPrice?: string | number;
+  maxFeePerGas?: string | number;
+  maxPriorityFeePerGas?: string | number;
+  nonce?: number | string;
+}
+```

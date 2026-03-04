@@ -1,0 +1,242 @@
+---
+title: "setInstance()"
+description: "Set the active DSA instance for executing transactions"
+---
+
+## Description
+
+The `setInstance()` method sets the current active DSA (DeFi Smart Account) instance that will be used for all subsequent operations like casting spells and executing transactions. This method fetches the account details from the blockchain and updates the internal instance state.
+
+## Syntax
+
+```typescript
+await dsa.setInstance(id: number)
+```
+
+## Parameters
+
+<ParamField path="id" type="number" required>
+  The unique ID of the DSA account you want to set as active. This ID can be obtained from the `getAccounts()` method or from when you create a new DSA with `build()`.
+</ParamField>
+
+## Returns
+
+<ResponseField type="Promise<Instance>">
+  Returns a promise that resolves to an Instance object containing:
+  
+  <Expandable title="Instance object properties">
+    <ResponseField name="id" type="number">
+      The unique ID of the DSA account.
+    </ResponseField>
+    
+    <ResponseField name="address" type="string">
+      The ethereum address of the DSA smart contract.
+    </ResponseField>
+    
+    <ResponseField name="version" type="number">
+      The version number of the DSA (1 or 2).
+    </ResponseField>
+    
+    <ResponseField name="chainId" type="ChainId">
+      The chain ID where the DSA is deployed (1 for Ethereum mainnet, 137 for Polygon, etc.).
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Usage
+
+### Basic Usage
+
+```typescript
+import { DSA } from "dsa-connect";
+import Web3 from "web3";
+
+const web3 = new Web3(window.ethereum);
+const dsa = new DSA(web3, 1); // 1 for Ethereum mainnet
+
+// Set DSA instance by ID
+const instance = await dsa.setInstance(12345);
+
+console.log("Active DSA set:");
+console.log(`ID: ${instance.id}`);
+console.log(`Address: ${instance.address}`);
+console.log(`Version: ${instance.version}`);
+console.log(`Chain ID: ${instance.chainId}`);
+```
+
+### Get Accounts and Set Instance
+
+```typescript
+// First, get all accounts for a user
+const accounts = await dsa.getAccounts("0x...");
+
+if (accounts.length > 0) {
+  // Set the first account as active
+  const instance = await dsa.setInstance(accounts[0].id);
+  console.log(`Active DSA: ${instance.address}`);
+} else {
+  console.log("No DSA accounts found. Create one with dsa.build()");
+}
+```
+
+### Set Instance and Execute Spells
+
+```typescript
+// Set the active DSA instance
+await dsa.setInstance(12345);
+
+// Now you can cast spells on this DSA
+const spells = dsa.Spell();
+
+spells.add({
+  connector: "compound",
+  method: "deposit",
+  args: ["ETH-A", web3.utils.toWei("1", "ether"), 0, 0],
+});
+
+await spells.cast({
+  from: "0x...",
+});
+
+console.log("Spell executed on DSA #12345");
+```
+
+### Switch Between Multiple DSAs
+
+```typescript
+const accounts = await dsa.getAccounts("0x...");
+
+// Use first DSA for one operation
+await dsa.setInstance(accounts[0].id);
+const spell1 = dsa.Spell();
+spell1.add(/* ... */);
+await spell1.cast({ from: "0x..." });
+
+// Switch to second DSA for another operation
+await dsa.setInstance(accounts[1].id);
+const spell2 = dsa.Spell();
+spell2.add(/* ... */);
+await spell2.cast({ from: "0x..." });
+
+console.log("Operations completed on multiple DSAs");
+```
+
+### With Error Handling
+
+```typescript
+try {
+  const instance = await dsa.setInstance(12345);
+  console.log(`Successfully set DSA instance: ${instance.address}`);
+} catch (error) {
+  if (error.message.includes("does not exist")) {
+    console.error("This DSA ID does not exist");
+  } else {
+    console.error("Failed to set instance:", error.message);
+  }
+}
+```
+
+### Store and Restore Instance
+
+```typescript
+// Store the DSA ID in localStorage
+const dsaId = 12345;
+localStorage.setItem("activeDsaId", dsaId.toString());
+
+// Later, restore the instance
+const storedId = parseInt(localStorage.getItem("activeDsaId"));
+if (storedId) {
+  await dsa.setInstance(storedId);
+  console.log("DSA instance restored from storage");
+}
+```
+
+### Verify Instance Before Operations
+
+```typescript
+await dsa.setInstance(12345);
+
+// Access the current instance
+console.log("Current DSA Instance:");
+console.log(`ID: ${dsa.instance.id}`);
+console.log(`Address: ${dsa.instance.address}`);
+console.log(`Version: ${dsa.instance.version}`);
+console.log(`Chain: ${dsa.instance.chainId}`);
+
+// Verify before casting spells
+if (dsa.instance.id === 12345) {
+  // Safe to proceed with operations
+  const spells = dsa.Spell();
+  // ...
+}
+```
+
+## Return Value Example
+
+```typescript
+{
+  id: 12345,
+  address: "0xabcd1234...",
+  version: 2,
+  chainId: 1
+}
+```
+
+## Notes
+
+- You must call `setInstance()` before executing any DSA operations like casting spells
+- The method fetches the latest account details from the blockchain
+- If the DSA ID doesn't exist, the method will throw an error
+- The instance information is stored in `dsa.instance` and can be accessed at any time
+- Chain ID is automatically detected from the blockchain
+- Setting a new instance will override the previous active instance
+
+## Errors
+
+The method will throw an error in the following cases:
+
+### Missing ID
+```typescript
+await dsa.setInstance(); // Error: `id` of DSA is not defined.
+```
+
+### Invalid ID
+```typescript
+await dsa.setInstance(NaN); // Error: Invalid id 'NaN' for DSA.
+await dsa.setInstance(Infinity); // Error: Invalid id 'Infinity' for DSA.
+```
+
+### Non-existent DSA
+```typescript
+await dsa.setInstance(999999); // Error: dsaId does not exist. Run `dsa.build()` to create a new DSA.
+```
+
+## Alias Method
+
+The method `setAccount()` is an alias for `setInstance()` and works identically:
+
+```typescript
+// These are equivalent
+await dsa.setInstance(12345);
+await dsa.setAccount(12345);
+```
+
+## Accessing Current Instance
+
+After setting an instance, you can access its properties:
+
+```typescript
+await dsa.setInstance(12345);
+
+// Access instance properties
+const currentId = dsa.instance.id; // 12345
+const currentAddress = dsa.instance.address; // "0xabcd..."
+const currentVersion = dsa.instance.version; // 2
+const currentChain = dsa.instance.chainId; // 1
+```
+
+## Related Methods
+
+- [`build()`](/api/accounts/build) - Create a new DSA account
+- [`getAccounts()`](/api/accounts/get-accounts) - Retrieve all DSA accounts for an authority
+- [`getAccountIdDetails()`](/api/utilities/helpers) - Get details for a specific DSA ID

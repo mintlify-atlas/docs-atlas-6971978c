@@ -1,0 +1,373 @@
+---
+title: 'DSAConfig'
+description: 'Configuration options for initializing the DSA SDK'
+---
+
+## Overview
+
+The `DSAConfig` type defines the configuration options for initializing the DSA SDK. It supports three operation modes: browser, node, and simulation.
+
+## Type Definition
+
+```typescript
+type DSAConfig =
+  | {
+      web3: Web3
+      mode: 'node'
+      privateKey: string
+    }
+  | {
+      web3: Web3
+      mode: 'simulation'
+      publicKey: string
+    }
+  | {
+      web3: Web3
+      mode?: 'browser'
+    }
+```
+
+## Modes
+
+### Browser Mode
+
+Browser mode is designed for web applications where users connect their wallets (e.g., MetaMask, WalletConnect). This is the default mode.
+
+<ParamField path="web3" type="Web3" required>
+  A Web3 instance connected to the user's wallet provider
+</ParamField>
+
+<ParamField path="mode" type="'browser'">
+  Operation mode. Can be omitted as 'browser' is the default.
+</ParamField>
+
+#### Example
+
+```typescript
+import DSA from 'dsa-connect'
+import Web3 from 'web3'
+
+// Using window.ethereum (MetaMask, etc.)
+const web3 = new Web3(window.ethereum)
+const dsa = new DSA(web3, 1) // Browser mode is default
+
+// Or explicitly specify browser mode
+const dsa = new DSA({
+  web3,
+  mode: 'browser'
+}, 1)
+```
+
+#### Features
+
+- Transaction signing handled by user's wallet
+- No private key management required
+- Best for dApp frontends
+- Supports all Web3 wallet providers
+
+### Node Mode
+
+Node mode is designed for backend services, scripts, and automated systems where you manage private keys directly.
+
+<ParamField path="web3" type="Web3" required>
+  A Web3 instance connected to an RPC provider
+</ParamField>
+
+<ParamField path="mode" type="'node'" required>
+  Must be set to 'node'
+</ParamField>
+
+<ParamField path="privateKey" type="string" required>
+  The private key for signing transactions. Can include or omit the '0x' prefix.
+</ParamField>
+
+#### Example
+
+```typescript
+import DSA from 'dsa-connect'
+import Web3 from 'web3'
+
+const web3 = new Web3('https://mainnet.infura.io/v3/YOUR_INFURA_KEY')
+
+const dsa = new DSA({
+  web3,
+  mode: 'node',
+  privateKey: '0xYOUR_PRIVATE_KEY' // Can start with or without '0x'
+}, 1)
+
+// Now you can execute transactions
+await dsa.setInstance(123)
+const txHash = await dsa.cast(mySpells)
+```
+
+#### Features
+
+- Automatic transaction signing with provided private key
+- Ideal for backend services and automation
+- Requires secure private key management
+- Required parameters:
+  - `gasPrice` or `maxFeePerGas`/`maxPriorityFeePerGas`
+  - `gas` limit
+  - `nonce`
+
+#### Security Considerations
+
+<Warning>
+  Never expose private keys in client-side code or commit them to version control. Use environment variables or secure key management systems.
+</Warning>
+
+```typescript
+// Good: Use environment variables
+const dsa = new DSA({
+  web3,
+  mode: 'node',
+  privateKey: process.env.PRIVATE_KEY
+}, 1)
+
+// Bad: Hard-coded private key
+const dsa = new DSA({
+  web3,
+  mode: 'node',
+  privateKey: '0x1234...' // Never do this!
+}, 1)
+```
+
+### Simulation Mode
+
+Simulation mode is designed for testing and estimating gas costs without executing actual transactions.
+
+<ParamField path="web3" type="Web3" required>
+  A Web3 instance connected to an RPC provider
+</ParamField>
+
+<ParamField path="mode" type="'simulation'" required>
+  Must be set to 'simulation'
+</ParamField>
+
+<ParamField path="publicKey" type="string" required>
+  The Ethereum address to simulate transactions from. Must be a valid Ethereum address.
+</ParamField>
+
+#### Example
+
+```typescript
+import DSA from 'dsa-connect'
+import Web3 from 'web3'
+
+const web3 = new Web3('https://mainnet.infura.io/v3/YOUR_INFURA_KEY')
+
+const dsa = new DSA({
+  web3,
+  mode: 'simulation',
+  publicKey: '0xYOUR_ETHEREUM_ADDRESS'
+}, 1)
+
+// Estimate gas without sending transaction
+const spells = dsa.Spell()
+  .add({
+    connector: 'compound',
+    method: 'deposit',
+    args: [token, amount, 0, 0]
+  })
+
+const gasEstimate = await spells.estimateCastGas()
+console.log(`Estimated gas: ${gasEstimate}`)
+
+// Encode transaction data
+const encodedData = await spells.encodeCastABI()
+```
+
+#### Features
+
+- Gas estimation without transaction execution
+- ABI encoding for off-chain analysis
+- Testing transaction logic
+- No gas costs or actual blockchain state changes
+
+#### Use Cases
+
+- Testing DeFi strategies before execution
+- Calculating transaction costs for users
+- Debugging spell sequences
+- Integration testing
+
+## Shorthand Initialization
+
+For browser mode, you can pass a Web3 instance directly instead of a config object:
+
+```typescript
+import DSA from 'dsa-connect'
+import Web3 from 'web3'
+
+const web3 = new Web3(window.ethereum)
+
+// These are equivalent
+const dsa1 = new DSA(web3, 1)
+const dsa2 = new DSA({ web3, mode: 'browser' }, 1)
+```
+
+## Chain ID
+
+The second parameter to the DSA constructor is the chain ID:
+
+<ParamField path="chainId" type="ChainId" default="1">
+  The blockchain network to connect to
+</ParamField>
+
+### Supported Networks
+
+| Chain ID | Network | Description |
+|----------|---------|-------------|
+| 1 | Ethereum | Ethereum Mainnet |
+| 137 | Polygon | Polygon (Matic) Mainnet |
+| 42161 | Arbitrum | Arbitrum One |
+| 43114 | Avalanche | Avalanche C-Chain |
+| 10 | Optimism | Optimism Mainnet |
+| 250 | Fantom | Fantom Opera |
+| 8453 | Base | Base Mainnet |
+| 9745 | Plasma | Plasma Network |
+| 56 | BSC | BNB Smart Chain |
+
+```typescript
+// Ethereum Mainnet
+const dsa = new DSA(web3, 1)
+
+// Polygon
+const dsa = new DSA(web3, 137)
+
+// Arbitrum
+const dsa = new DSA(web3, 42161)
+```
+
+## Options
+
+The third parameter accepts additional options:
+
+<ParamField path="options" type="Options">
+  Configuration options
+  <ParamField path="options.skipChainIdValidation" type="boolean" default="false">
+    Skip validation that the provided chainId matches the Web3 provider's network
+  </ParamField>
+</ParamField>
+
+```typescript
+const dsa = new DSA(web3, 1, {
+  skipChainIdValidation: true
+})
+```
+
+<Warning>
+  Only skip chain ID validation if you're certain about your configuration. Mismatched chain IDs can lead to failed transactions.
+</Warning>
+
+## Validation
+
+The DSA constructor performs the following validations:
+
+### Browser Mode
+
+- Web3 instance must be provided
+- No additional validation required
+
+### Node Mode
+
+- Web3 instance must be provided
+- `privateKey` must be provided
+- Private key is automatically prefixed with '0x' if missing
+
+### Simulation Mode
+
+- Web3 instance must be provided
+- `publicKey` must be provided
+- `publicKey` must be a valid Ethereum address
+- Address is automatically converted to checksum format
+
+### Chain ID Validation
+
+By default, the SDK validates that the provided `chainId` matches the network of the Web3 provider:
+
+```typescript
+// This will throw an error if web3 is connected to a different network
+const dsa = new DSA(web3, 1) // Expects Ethereum mainnet
+```
+
+Error message: `chainId doesn't match with the web3. Initiate 'dsa' like this: 'const dsa = new DSA(web3, chainId)'`
+
+## Common Patterns
+
+### Frontend dApp
+
+```typescript
+import DSA from 'dsa-connect'
+import Web3 from 'web3'
+
+const connectWallet = async () => {
+  // Request wallet connection
+  await window.ethereum.request({ method: 'eth_requestAccounts' })
+  
+  const web3 = new Web3(window.ethereum)
+  const dsa = new DSA(web3, 1)
+  
+  return dsa
+}
+```
+
+### Backend Service
+
+```typescript
+import DSA from 'dsa-connect'
+import Web3 from 'web3'
+
+const initDSA = () => {
+  const web3 = new Web3(process.env.RPC_URL)
+  
+  return new DSA({
+    web3,
+    mode: 'node',
+    privateKey: process.env.PRIVATE_KEY
+  }, parseInt(process.env.CHAIN_ID))
+}
+```
+
+### Testing Framework
+
+```typescript
+import DSA from 'dsa-connect'
+import Web3 from 'web3'
+
+const setupTestDSA = (testAddress: string) => {
+  const web3 = new Web3('http://localhost:8545')
+  
+  return new DSA({
+    web3,
+    mode: 'simulation',
+    publicKey: testAddress
+  }, 1)
+}
+```
+
+## Type Definition
+
+```typescript
+export type DSAConfig =
+  | {
+      web3: Web3
+      mode: 'node'
+      privateKey: string
+    }
+  | {
+      web3: Web3
+      mode: 'simulation'
+      publicKey: string
+    }
+  | {
+      web3: Web3
+      mode?: 'browser'
+    }
+
+export type ChainId = 1 | 137 | 42161 | 43114 | 10 | 250 | 8453 | 9745 | 56
+
+type Options = {
+  skipChainIdValidation?: boolean
+}
+```

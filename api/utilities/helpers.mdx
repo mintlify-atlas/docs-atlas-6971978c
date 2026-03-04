@@ -1,0 +1,498 @@
+---
+title: Helper Methods
+description: Utility helper methods for encoding spells, estimating gas, and transaction management
+---
+
+## Overview
+
+The DSA SDK provides several helper methods for working with spells, transactions, and smart contract interactions. These methods are available both as aliases on the main DSA instance and through their respective utility classes.
+
+---
+
+## Spell Encoding
+
+### encodeSpells
+
+Encode spells into targets and calldata arrays for the cast function.
+
+```typescript
+dsa.encodeSpells(
+  params: Spells | { spells: Spells },
+  version?: Version,
+  chainId?: ChainId
+): { targets: string[], spells: string[] }
+```
+
+**Parameters:**
+
+<ParamField path="params" type="Spells | { spells: Spells }" required>
+  Spells instance or object containing spells
+</ParamField>
+
+<ParamField path="version" type="Version">
+  DSA version (1 or 2). Defaults to instance version
+</ParamField>
+
+<ParamField path="chainId" type="ChainId">
+  Chain ID. Defaults to instance chain ID
+</ParamField>
+
+**Returns:** Object with `targets` (connector addresses) and `spells` (encoded calldata)
+
+**Example:**
+
+```typescript
+const spells = dsa.Spell()
+  .add({
+    connector: "BASIC-A",
+    method: "deposit",
+    args: ["0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "1000000000000000000", 0, 0]
+  });
+
+const encoded = dsa.encodeSpells(spells);
+console.log(encoded.targets); // ["BASIC-A"]
+console.log(encoded.spells);  // ["0x..."]
+```
+
+<Note>
+This method automatically handles connector name mapping for different DSA versions and converts flashloan spells when needed.
+</Note>
+
+**Also available as:**
+- `dsa.internal.encodeSpells()`
+- `spell.encodeSpells()` (on Spell instances)
+
+---
+
+### encodeCastABI
+
+Encode the complete cast ABI for executing spells on a DSA.
+
+```typescript
+dsa.encodeCastABI(
+  params: Spells | EncodeAbiParams
+): string
+```
+
+**Parameters:**
+
+<ParamField path="params" type="Spells | EncodeAbiParams" required>
+  Spells instance or parameters object
+</ParamField>
+
+**EncodeAbiParams:**
+
+```typescript
+interface EncodeAbiParams {
+  spells: Spells;    // Spells to encode
+  to?: string;       // DSA address (defaults to instance address)
+  origin?: string;   // Origin address for analytics
+  version?: 1 | 2;   // DSA version
+}
+```
+
+**Returns:** Encoded ABI string ready to be used as transaction data
+
+**Example:**
+
+```typescript
+const spells = dsa.Spell()
+  .add({
+    connector: "COMPOUND-A",
+    method: "deposit",
+    args: ["DAI", "1000000000000000000", 0, 0]
+  });
+
+const castABI = dsa.encodeCastABI(spells);
+
+// Use in a custom transaction
+const txConfig = {
+  from: "0xYourAddress...",
+  to: dsa.instance.address,
+  data: castABI,
+  gas: "500000"
+};
+```
+
+**Also available as:**
+- `dsa.castHelpers.encodeABI()`
+- `spell.encodeCastABI()` (on Spell instances)
+
+---
+
+## Gas Estimation
+
+### estimateCastGas
+
+Estimate the gas cost for executing spells.
+
+```typescript
+await dsa.estimateCastGas(
+  params: {
+    spells: Spells;
+    from?: string;
+    to?: string;
+    value?: string;
+  }
+): Promise<number>
+```
+
+**Parameters:**
+
+<ParamField path="spells" type="Spells" required>
+  Spells instance to estimate
+</ParamField>
+
+<ParamField path="from" type="string">
+  Sender address. Auto-detected if not provided
+</ParamField>
+
+<ParamField path="to" type="string">
+  DSA address. Defaults to instance address
+</ParamField>
+
+<ParamField path="value" type="string">
+  ETH value in wei. Defaults to "0"
+</ParamField>
+
+**Returns:** Estimated gas units as a number
+
+**Example:**
+
+```typescript
+const spells = dsa.Spell()
+  .add({
+    connector: "AAVE-V2-A",
+    method: "deposit",
+    args: ["ETH", "1000000000000000000", 0, 0]
+  })
+  .add({
+    connector: "AAVE-V2-A",
+    method: "borrow",
+    args: ["DAI", "500000000000000000000", 2, 0, 0]
+  });
+
+const gasEstimate = await dsa.estimateCastGas({ spells });
+console.log(`Estimated gas: ${gasEstimate}`);
+
+// Use in cast
+await spells.cast({ gas: gasEstimate });
+```
+
+**Also available as:**
+- `dsa.castHelpers.estimateGas()`
+- `spell.estimateCastGas()` (on Spell instances)
+
+<Warning>
+Gas estimation can fail if the transaction would revert. The method throws an `EstimatedGasException` with details about the failure.
+</Warning>
+
+---
+
+## Account Methods
+
+### count
+
+Get the total number of DSA accounts for the connected address.
+
+```typescript
+await dsa.count(address?: string): Promise<number>
+```
+
+**Parameters:**
+
+<ParamField path="address" type="string">
+  Address to query. Auto-detected if not provided
+</ParamField>
+
+**Returns:** Number of DSA accounts
+
+**Example:**
+
+```typescript
+const accountCount = await dsa.count();
+console.log(`You have ${accountCount} DSA accounts`);
+```
+
+**Also available as:** `dsa.accounts.count()`
+
+---
+
+### getAccounts
+
+Get all DSA account IDs for an address.
+
+```typescript
+await dsa.getAccounts(address?: string): Promise<number[]>
+```
+
+**Parameters:**
+
+<ParamField path="address" type="string">
+  Address to query. Auto-detected if not provided
+</ParamField>
+
+**Returns:** Array of DSA account IDs
+
+**Example:**
+
+```typescript
+const accounts = await dsa.getAccounts();
+console.log("Your DSA IDs:", accounts); // [1, 5, 12]
+
+// Set instance to first account
+if (accounts.length > 0) {
+  await dsa.setInstance(accounts[0]);
+}
+```
+
+**Also available as:** `dsa.accounts.getAccounts()`
+
+---
+
+### getAuthById
+
+Get authority addresses (owners) for a specific DSA account.
+
+```typescript
+await dsa.getAuthById(id: number): Promise<string[]>
+```
+
+**Parameters:**
+
+<ParamField path="id" type="number" required>
+  DSA account ID
+</ParamField>
+
+**Returns:** Array of authority addresses
+
+**Example:**
+
+```typescript
+const authorities = await dsa.getAuthById(1);
+console.log("Account authorities:", authorities);
+// ["0xOwnerAddress1...", "0xOwnerAddress2..."]
+```
+
+**Also available as:** `dsa.accounts.getAuthoritiesById()`
+
+---
+
+## Avocado Integration
+
+### convertToAvocadoActions
+
+Convert spells to Avocado multisig actions format.
+
+```typescript
+await dsa.convertToAvocadoActions(
+  spells: Spells,
+  version?: Version,
+  chainId?: ChainId
+): Promise<AvocadoAction[]>
+```
+
+**Parameters:**
+
+<ParamField path="spells" type="Spells" required>
+  Spells to convert
+</ParamField>
+
+<ParamField path="version" type="Version">
+  DSA version. Defaults to instance version
+</ParamField>
+
+<ParamField path="chainId" type="ChainId">
+  Chain ID. Defaults to instance chain ID
+</ParamField>
+
+**Returns:** Array of Avocado actions
+
+**Example:**
+
+```typescript
+const spells = dsa.Spell()
+  .add({
+    connector: "BASIC-A",
+    method: "withdraw",
+    args: ["ETH", "1000000000000000000", "0xTo...", 0, 0]
+  });
+
+const actions = await dsa.convertToAvocadoActions(spells);
+// Use with Avocado multisig
+```
+
+**Also available as:**
+- `dsa.avocado.convertToActions()`
+- `spell.convertToAvocadoActions()` (on Spell instances)
+
+---
+
+## Internal Utilities
+
+The following methods are available through `dsa.internal` for advanced use cases:
+
+### getTransactionConfig
+
+Build a complete transaction configuration object with gas estimation.
+
+```typescript
+await dsa.internal.getTransactionConfig(
+  params: GetTransactionConfigParams
+): Promise<TransactionConfig>
+```
+
+**Parameters:**
+
+```typescript
+interface GetTransactionConfigParams {
+  from: string;      // Required: sender address
+  to: string;        // Required: recipient address
+  data: string;      // Required: transaction data
+  value?: string;    // ETH value
+  gas?: string | number;      // Gas limit (estimated if not provided)
+  gasPrice?: string | number; // Gas price
+  nonce?: number;    // Transaction nonce
+  maxFeePerGas?: string | number;
+  maxPriorityFeePerGas?: string | number;
+}
+```
+
+---
+
+### getAddress
+
+Get the current user's Ethereum address.
+
+```typescript
+await dsa.internal.getAddress(): Promise<string>
+```
+
+**Returns:** User address (from web3 accounts, private key, or public key depending on mode)
+
+---
+
+### filterAddress
+
+Convert a token symbol to its address or validate/checksum an address.
+
+```typescript
+dsa.internal.filterAddress(token: string): string
+```
+
+**Parameters:**
+
+<ParamField path="token" type="string" required>
+  Token symbol (e.g., "DAI") or address
+</ParamField>
+
+**Returns:** Checksummed token address
+
+**Example:**
+
+```typescript
+const daiAddress = dsa.internal.filterAddress("DAI");
+console.log(daiAddress); // "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+
+const checksummed = dsa.internal.filterAddress("0xabcd...");
+console.log(checksummed); // Checksummed version
+```
+
+---
+
+### estimateGas
+
+Estimate gas for a raw contract method call.
+
+```typescript
+await dsa.internal.estimateGas(
+  params: EstimateGasParams
+): Promise<number>
+```
+
+**Parameters:**
+
+```typescript
+interface EstimateGasParams {
+  from: string;      // Sender address
+  to: string;        // Contract address
+  abi: AbiItem;      // Method ABI
+  args: any[];       // Method arguments
+  value: string;     // ETH value
+}
+```
+
+**Returns:** Estimated gas units
+
+---
+
+## Constants
+
+### maxValue
+
+Maximum uint256 value, useful for unlimited approvals or max balance operations.
+
+```typescript
+const maxUint = dsa.maxValue;
+// "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+
+// Also available as a function
+const maxUint = dsa.maxVal();
+```
+
+**Usage:**
+
+```typescript
+// Unlimited approval
+await dsa.erc20.approve({
+  token: "DAI",
+  amount: dsa.maxValue,
+  to: "0xSpender..."
+});
+
+// Transfer max balance
+await dsa.erc20.transfer({
+  token: "USDC",
+  amount: "-1", // Also works with -1
+  to: "0xRecipient..."
+});
+```
+
+---
+
+## Types
+
+### Version
+
+```typescript
+type Version = 1 | 2;
+```
+
+### ChainId
+
+```typescript
+type ChainId = 1 | 137 | 42161 | 43114 | 10 | 250 | 8453 | 9745 | 56;
+// 1 = Mainnet
+// 137 = Polygon
+// 42161 = Arbitrum
+// 43114 = Avalanche
+// 10 = Optimism
+// 250 = Fantom
+// 8453 = Base
+// 9745 = Plasma
+// 56 = BSC
+```
+
+### EstimateGasParams
+
+```typescript
+import { AbiItem } from 'web3-utils';
+
+interface EstimateGasParams {
+  from: string;
+  to: string;
+  abi: AbiItem;
+  args: any[];
+  value: string;
+}
+```
