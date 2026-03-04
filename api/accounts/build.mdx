@@ -76,7 +76,7 @@ await dsa.build(params: BuildParams)
 ### Browser Mode
 
 ```typescript
-import { DSA } from "dsa-connect";
+import DSA from "dsa-connect";
 import Web3 from "web3";
 
 const web3 = new Web3(window.ethereum);
@@ -93,7 +93,7 @@ console.log("DSA created! Transaction hash:", transaction.hash);
 ### Node Mode
 
 ```typescript
-import { DSA } from "dsa-connect";
+import DSA from "dsa-connect";
 import Web3 from "web3";
 
 const web3 = new Web3("https://mainnet.infura.io/v3/YOUR_INFURA_KEY");
