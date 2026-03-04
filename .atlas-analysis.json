@@ -1,0 +1,108 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "DSA Connect",
+  "projectDescription": "Official JavaScript SDK for interacting with DeFi Smart Accounts on Ethereum and EVM-compatible chains.",
+  "theme": "palm",
+  "primaryColor": "#242b2c",
+  "lightColor": "#040404",
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/dsa-accounts",
+              "concepts/spells",
+              "concepts/connectors"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/setup",
+              "guides/creating-accounts",
+              "guides/casting-spells",
+              "guides/multi-chain"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Core",
+            "pages": [
+              "api/dsa-class",
+              "api/configuration",
+              "api/instance"
+            ]
+          },
+          {
+            "group": "Accounts",
+            "pages": [
+              "api/accounts/build",
+              "api/accounts/get-accounts",
+              "api/accounts/set-instance"
+            ]
+          },
+          {
+            "group": "Spells",
+            "pages": [
+              "api/spells/spell-class",
+              "api/spells/add",
+              "api/spells/cast"
+            ]
+          },
+          {
+            "group": "Utilities",
+            "pages": [
+              "api/utilities/erc20",
+              "api/utilities/transaction",
+              "api/utilities/helpers"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Create and manage DeFi Smart Accounts (DSA)",
+    "Execute multi-protocol DeFi operations in single transactions",
+    "Support for multiple EVM chains (Ethereum, Polygon, Arbitrum, Optimism, etc.)",
+    "Browser and Node.js compatibility",
+    "Type-safe TypeScript SDK",
+    "Composable spell system for complex DeFi workflows"
+  ],
+  "publicApiSurface": [
+    "DSA - Main class for SDK initialization",
+    "DSAConfig - Configuration interface for DSA initialization",
+    "ChainId - Supported blockchain IDs (1, 137, 42161, 43114, 10, 250, 8453, 9745, 56)",
+    "Instance - DSA account instance interface",
+    "Spell - Spell class for creating transaction sequences",
+    "dsa.build() - Create new DSA account",
+    "dsa.getAccounts() - Fetch accounts for an address",
+    "dsa.setInstance() - Set active DSA account",
+    "dsa.Spell() - Create new spell instance",
+    "spell.add() - Add connector method to spell",
+    "spell.cast() - Execute spell on blockchain",
+    "dsa.encodeSpells() - Encode spells to calldata",
+    "dsa.encodeCastABI() - Encode cast ABI",
+    "dsa.estimateCastGas() - Estimate gas for spell execution",
+    "dsa.erc20 - ERC20 token utilities",
+    "dsa.erc721 - ERC721 NFT utilities",
+    "dsa.instapool_v2 - Instapool v2 resolver",
+    "dsa.avocado - Avocado integration utilities"
+  ]
+}
